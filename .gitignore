@@ -1,1 +1,8 @@
 .python-version
+__pycache__
+*.pdf
+*.egg-info
+deps/
+.mypy_cache/
+*.pstats
+.DS_Store
