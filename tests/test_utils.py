@@ -1,6 +1,7 @@
 import os
 from letter_box.utils import (
     ValidLiterals,
+    RestartIterator,
     can_make_word
 )
 
@@ -117,3 +118,27 @@ def test_can_make_word():
     assert list(can_make_word("gum", letters, S)) == [[4, 0, 7]]
     # These are not
     assert list(can_make_word("asdf", letters, S)) == []
+
+
+def test_restart_iterator():
+
+    # Build and iterator
+    iterator = RestartIterator(x for x in range(10))
+    # for val in iterator:
+    #     print(val)
+
+    for _ in range(1000000):
+        assert len(list(iterator)) == 10
+
+
+    iterator.get_value_at_index(0)
+    iterator.get_value_at_index(0)
+    iterator.get_value_at_index(1)
+
+    # Check that it's iterable, and doesn't empty as it iterates
+    # assert len(list(iterator)) == 10
+    # assert len(list(iterator)) == 10
+
+
+if __name__ == "__main__":
+    test_restart_iterator()

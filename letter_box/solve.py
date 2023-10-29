@@ -43,11 +43,11 @@ def solve(
             # Start a new node
             node = GraphNode.new(game, i, oracle=oracle)
             t = Trajectory()
-
             # Iterate until we no longer get nodes or have reached a winning state
             while (visit := node.visit(T, depth_of_search=depth)) is not None:
                 new_words, new_paths, new_nodes = visit
                 t.add_words_states(new_words, new_paths, [n.state for n in new_nodes])
+
                 # Depending on depth, we may have many nodes traveled on this visit, so
                 # update our node to the last in the chain
                 node = new_nodes[-1]

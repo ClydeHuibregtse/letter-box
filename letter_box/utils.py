@@ -1,9 +1,11 @@
 """Various helper methods that are independent of the solve algorithm"""
 
-from typing import List, Any, Dict, Set, Optional, Iterator
+from typing import List, Any, Dict, Set, Optional, Iterator, Tuple, Generic, TypeVar
 import string
 import json
 import re
+import itertools
+from functools import lru_cache, cache
 
 from attrs import define, field
 import numpy as np
@@ -84,6 +86,66 @@ def build_letters(S: int) -> List[str]:
 def state_factory(s: int, fill: Any) -> List[Any]:
     # Four sides, each of length s
     return [fill] * s * 4
+
+
+IteratorVal = TypeVar("IteratorVal")
+
+
+@define()
+class RestartIterator(Generic[IteratorVal]):
+    """A thin wrapper for an Iterator that doesn't throw away values after iteration"""
+    iterator: Iterator[IteratorVal] = field()
+
+    _current_index: int = field(default=0)
+    _empty: bool = field(default=False)
+
+    def __hash__(self):
+        return id(self.iterator)
+
+    @cache
+    def _val_at_index(self, index: int) -> Optional[IteratorVal]:
+        # Increment index, and return the next of the iterator
+        # This will be cached
+        assert index == self._current_index, \
+            f"Index: {index} != Current Index: {self._current_index}"
+        try:
+            val = next(self.iterator)
+            self._current_index += 1
+            return val
+        except StopIteration:
+            self._empty = True
+            return None
+
+    def get_value_at_index(self, index: int) -> Optional[IteratorVal]:
+
+        # If we reach an uncached version of this function, we know
+        # index is above the _current_index, walk until index
+        if index <= self._current_index:
+            return self._val_at_index(index)
+
+        for i in range(self._current_index, index):
+            val = self._val_at_index(i)
+        return val
+
+    def __next__(self):
+        return self.get_value_at_index(self._current_index)
+
+    def __iter__(self):
+
+        if not self._empty:
+            while (value := self.get_value_at_index(self._current_index)) is not None:
+                yield value
+        else:
+            for i in range(self._current_index):
+                yield self.get_value_at_index(i)
+
+    def peek(self) -> Optional[Tuple[Any, Iterator[IteratorVal]]]:
+        """Peek inside a generator"""
+        try:
+            first = next(self)
+        except StopIteration:
+            return None
+        return first, itertools.chain([first], self)
 
 
 def can_make_word(

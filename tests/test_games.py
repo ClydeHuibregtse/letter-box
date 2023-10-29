@@ -37,13 +37,15 @@ def test_graph_nodes():
 
     # Visit this node and evaluate what edges come out
     new_words, new_paths, nodes = n.visit(1.0)
-    print(n.to_ascii())
     node = nodes[0]
     # Check the behavior of variable depth of search
     assert len(node.edges) == 0
     node.find_edges()
     assert len(node.edges) > 0
     assert all(len(e_node.edges) == 0 for w, (s, e_node, e_path) in node.edges.items())
+
+    new_words, new_paths, nodes = n.visit(1.0)
+    node = nodes[0]
     node.find_edges(depth_of_search=2)
     assert len(node.edges) > 0
     assert all(len(e_node.edges) > 0 for w, (s, e_node, e_path) in node.edges.items())
@@ -58,7 +60,7 @@ def test_graph_nodes():
 
 def test_trajectory():
     """Tests the implementation of Trajectory"""
-    solve(S=5, N=10)
+    solve(S=7, N=10)
 
 
 if __name__ == "__main__":
