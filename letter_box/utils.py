@@ -1,6 +1,6 @@
 """Various helper methods that are independent of the solve algorithm"""
 
-from typing import List, Any, Dict, Set, Optional, Iterator
+from typing import List, Any, Dict, Set, Optional, Iterator, Tuple, Generic, TypeVar
 import string
 import json
 import re
@@ -84,6 +84,99 @@ def build_letters(S: int) -> List[str]:
 def state_factory(s: int, fill: Any) -> List[Any]:
     # Four sides, each of length s
     return [fill] * s * 4
+
+
+IteratorVal = TypeVar("IteratorVal")
+
+
+@define()
+class CircularIterator(Generic[IteratorVal]):
+    """A thin wrapper for an Iterator that cycles over an iterator,
+    while caching seen value
+    """
+    iterator: Iterator[IteratorVal] = field()
+    _current_index: int = field(default=0)
+    _num_yielded: int = field(default=0)
+    _empty: bool = field(default=False)
+
+    _cache: List[IteratorVal] = field(factory=list)
+    _cache_len: int = field(default=0)
+
+    def __hash__(self):
+        return id(self.iterator)
+
+    def _get_value_at_index(self, index: int) -> Optional[IteratorVal]:
+        index = self._current_index if not self._empty or self._cache_len == 0 else self._current_index % self._cache_len
+        if index < self._cache_len:
+            # We're looking for a value we've already computed
+            return self._cache[index]
+
+        # We need to compute our way from the current _cache_len
+        # to the requested value
+        for i in range(self._cache_len, index + 1):
+            try:
+                val = next(self.iterator)
+                self._cache.append(val)
+                self._cache_len += 1
+                return val
+            except StopIteration:
+                self._empty = True
+                return None
+
+    def __next__(self):
+        val = self._get_value_at_index(self._current_index)
+        if val is None:
+            # We didn't find out we were empty until here, try to cycle back
+            # (we might get nothing)
+            val = self._get_value_at_index(self._current_index)
+            if val is None:
+                raise StopIteration
+
+        self._current_index += 1
+        return val
+
+    def __iter__(self):
+        # Count the number of values we've hit
+        counter = 0
+        # Iterate if we are not empty yet OR
+        # we have yet to emit all of the values in our cache
+        while not self._empty or counter != self._cache_len:
+            # Query the next value
+            value = self._get_value_at_index(self._current_index)
+
+            # Exit the loop if we're empty and we've emitted all of
+            # the values from the iterator
+            if self._empty and counter == self._cache_len:
+                return
+
+            # If it's None, that means we hit the end of the iterator, but
+            # we didn't know that we were at the end yet to perform modular
+            # indexing.
+            # We should never yield a None, so we should cycle back by
+            # trying again
+            if value is None:
+                value = self._get_value_at_index(self._current_index)
+
+            # Successful yield
+            counter += 1
+            self._current_index += 1
+            yield value
+
+    def peek(self) -> Optional[Tuple[IteratorVal, Iterator[IteratorVal]]]:
+        """Peek inside a generator
+
+        Returns
+        -------
+        Tuple[IteratorVal, CircularIterator[IteratorVal]], optional
+            The first value, and the remaining iterator, starting at
+            the next value
+        """
+        try:
+            first = next(self)
+        except StopIteration:
+            return None
+
+        return first, self
 
 
 def can_make_word(

@@ -143,7 +143,7 @@ class GraphNode():
         yield ""
 
     def to_ascii(self) -> str:
-        """Render this edge in a way that promotes debugging"""
+        """Render this node in a way that promotes debugging"""
         return "\n".join(self._to_ascii())
 
 
@@ -160,4 +160,4 @@ class Trajectory():
         self.states.extend(states)
 
     def is_fail(self) -> bool:
-        return not self.states[-1].is_win()
+        return len(self.states) == 0 or not self.states[-1].is_win()

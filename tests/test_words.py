@@ -79,8 +79,8 @@ def test_can_make_word_double_letter():
     # Solution paths are:
     #   1. [15, 2, 5, 11] # e's on the first and second edge
     #   2. [15, 2, 6, 11] # e's on the first and second edge (other e)
-    #   3. [15, 5, 2, 11] # e's on the first and second edge (reversed 1 - ignore)
-    #   4. [15, 6, 2, 11] # e's on the first and second edge (reversed 2 - ignore)
+    #   3. [15, 5, 2, 11] # e's on the first and second edge (reversed 1)
+    #   4. [15, 6, 2, 11] # e's on the first and second edge (reversed 2)
     # We have to be able to coerce both sets of these
     letters = [
         "h", "q", "e", "o", "d", "e", "e", "a",
@@ -89,7 +89,7 @@ def test_can_make_word_double_letter():
 
     game = Game.new(letters)
 
-    assert can_make_word("teen", game.letters, game.S) == [
+    assert list(can_make_word("teen", game.letters, game.S)) == [
         [15, 2, 5, 11],
         [15, 2, 6, 11],
         [15, 5, 2, 11],

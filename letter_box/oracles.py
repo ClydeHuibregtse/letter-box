@@ -6,6 +6,7 @@ from attrs import define, field
 from .games import Game
 from .utils import (
     can_make_word,
+    CircularIterator,
     ValidLiterals
 )
 
@@ -17,7 +18,7 @@ class Oracle(object):
 
     game: Game = field()
     _word_mapping: Dict[int, Set[str]] = field(factory=dict)
-    _word_path_mapping: Dict[Tuple[int, str], List[List[int]]] = field(factory=dict)
+    _word_path_mapping: Dict[Tuple[int, str], CircularIterator] = field(factory=dict)
 
     @classmethod
     def new(cls, letters: List[str]) -> "Oracle":
@@ -45,16 +46,6 @@ class Oracle(object):
         )
         return self._word_mapping[start_index]
 
-    def valid_paths_by_word(self, w: str, start_index: int) -> Iterator[List[int]]:
-        if (start_index, w) not in self._word_path_mapping:
-            self._word_path_mapping[(start_index, w)] = can_make_word(
-                w[1:],
-                self.game.letters,
-                self.game.S,
-                trajectory=[start_index]
-            )
-        yield from self._word_path_mapping[(start_index, w)]
-
     def _build_valid_words_cache(self, start_index: int) -> Set[str]:
         """Build a cache of valid words beginning at start_index"""
         start_letter = self.game.flat_letters[start_index]
@@ -62,17 +53,30 @@ class Oracle(object):
 
         valid_words = set()
         for w in candidate_words:
+
+            # Wrap the result of our can_make_word generator in a
+            # wrapper that makes it cached and circular, so we can
+            # cheaply query from it over and over, if the same word is tried
+            # many times, and the generator doesn't run out, accidentally
+            # nixing words from the vocabulary
+            valid_paths = CircularIterator(
+                can_make_word(
+                    w[1:], self.game.letters, self.game.S, trajectory=[start_index]
+                )
+            )
             if (
-                start_index in self.game.letters[w[0]]  # First char is in right location
-                and (valid_paths := can_make_word(w[1:], self.game.letters, self.game.S, trajectory=[start_index]))  # Remainder is valid
+                start_index in self.game.letters[w[0]]       # First char is in right location
+                and valid_paths.peek() is not None           # Remainder is valid
             ):
                 # Extend the cache
                 if (start_index, w) not in self._word_path_mapping:
-                    self._word_path_mapping[(start_index, w)] = []
-                self._word_path_mapping[(start_index, w)].extend(valid_paths)
+                    self._word_path_mapping[(start_index, w)] = valid_paths
                 valid_words.add(w)
 
         return valid_words
+
+    def valid_paths_by_word(self, w: str, start_index: int) -> Iterator[List[int]]:
+        return self._word_path_mapping[(start_index, w)]
 
     def submit_word(
         self,
@@ -80,7 +84,7 @@ class Oracle(object):
         w: str,
         start_index: int
     ) -> Optional[Tuple[Game, List[int]]]:
-        """Submit a word and return a new Game and its score change"""
+        """Submit a word and return a new Game and the path used to get there"""
         # Get all valid paths for this word (may hit cache)
         paths = self.valid_paths_by_word(w, start_index)
 
