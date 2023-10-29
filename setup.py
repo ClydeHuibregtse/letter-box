@@ -5,6 +5,7 @@ setup(
     version='0.1.0',
     packages=find_packages(),
     install_requires=[
-        # List your dependencies here
+        "attrs~=23.1.0",
+        "numpy~=1.24.0",
     ],
 )
