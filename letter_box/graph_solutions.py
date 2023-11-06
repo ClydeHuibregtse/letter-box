@@ -47,7 +47,7 @@ class GraphNode():
 
         # Populate the edges that are pointed away from this node
         if len(self.edges) == 0:
-            S = len(self.state.state) // 4
+            S = len(self.state.flat_letters) // 4
             self.edges = GraphNode.compute_edges(self, self.last_index, S)
 
         # Recurse depending on depth

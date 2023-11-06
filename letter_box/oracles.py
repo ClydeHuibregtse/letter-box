@@ -92,16 +92,13 @@ class Oracle(object):
         # any score
         best_path = []
         for path in paths:
+            path_state = sum(2 ** n for n in path)
             best_path = path
-            if sum(not game.state[i] for i in path) > 0:
+            if (new_state := game.state | path_state) > game.state:
                 break
         # If no best path, then we have no valid paths
         if len(best_path) == 0:
             return None
-
-        new_state = game.state[:]
-        for idx in best_path:
-            new_state[idx] = True
 
         new_game = game.update_state(new_state)
         return new_game, best_path

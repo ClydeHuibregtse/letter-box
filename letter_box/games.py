@@ -13,7 +13,7 @@ from .utils import (
 class Game(object):
 
     letters: Dict[str, Set[int]] = field()
-    state: List[bool] = field()
+    state: int = field()
     S: int = field()
     flat_letters: List[str] = field()
 
@@ -26,7 +26,7 @@ class Game(object):
                 mapped_letters[l].add(i)
             else:
                 mapped_letters[l] = {i}
-        return Game(mapped_letters, state_factory(S, False), S, letters)
+        return Game(mapped_letters, 0, S, letters)
 
     def __repr__(self) -> str:
         return self.to_binary()
@@ -36,8 +36,11 @@ class Game(object):
 
         # Build a "table"-like array into which we populate ascii characters
         # Joining these with \n and spaces will emit a board
-        S = len(self.state) // 4  # always an integer
+        S = len(self.flat_letters) // 4  # always an integer
         board = np.empty((S + 4, S + 4), dtype=str)
+
+        def state(n):
+            return (self.state >> n) & 1
 
         # Draw letters
         for letter, locs in self.letters.items():
@@ -48,7 +51,7 @@ class Game(object):
                 index_along_side = loc - side * S
 
                 # If the letter is filled, let's put a * next to it
-                filled_char = "*" if self.state[loc] else ""
+                filled_char = "*" if state(loc) else ""
 
                 if side == 0:
                     # Top
@@ -73,16 +76,16 @@ class Game(object):
         return "\n" + "\n".join("".join(char.ljust(5) for char in board[r, :]) for r in range(board.shape[0])) + "\n"
 
     def to_binary(self) -> str:
-        return "".join("1" if x else "0" for x in self.state)
+        return bin(self.state)[2:]
 
-    def update_state(self, state: List[bool]) -> "Game":
+    def update_state(self, state: int) -> "Game":
         """Ingest a new state and emit a new Game object with the new state"""
         return Game(
             self.letters, state, self.S, self.flat_letters
         )
 
     def is_win(self) -> bool:
-        return all(self.state)
+        return self.score() == len(self.flat_letters)
 
     def score(self) -> int:
-        return sum(self.state)
+        return self.state.bit_count()
