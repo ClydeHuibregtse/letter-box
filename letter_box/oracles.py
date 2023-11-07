@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Tuple, Set, Optional, Iterator
+from typing import Dict, List, Tuple, Set, Optional, Iterator, TYPE_CHECKING
 
 from attrs import define, field
 
@@ -10,6 +10,9 @@ from .utils import (
     ValidLiterals
 )
 
+if TYPE_CHECKING:
+    from .graphs import GraphNode
+
 VALID_LITERALS = ValidLiterals.build(os.path.join(os.path.dirname(__file__), "words.json"))
 
 
@@ -19,6 +22,7 @@ class Oracle(object):
     game: Game = field()
     _word_mapping: Dict[int, Set[str]] = field(factory=dict)
     _word_path_mapping: Dict[Tuple[int, str], CircularIterator] = field(factory=dict)
+    _graph_nodes: Dict[Tuple[int, int], "GraphNode"] = field(factory=dict)
 
     @classmethod
     def new(cls, letters: List[str]) -> "Oracle":
@@ -28,6 +32,14 @@ class Oracle(object):
         game = Game.new(letters)
 
         return Oracle(game)
+
+    def get_graph_node(self, state: int, letter_index: int) -> Optional["GraphNode"]:
+        """Look up the node in our graph, if we have it"""
+        return self._graph_nodes.get((state, letter_index))
+
+    def set_graph_node(self, state: int, letter_index: int, node: "GraphNode"):
+        """Store a graph node in the cache"""
+        self._graph_nodes[(state, letter_index)] = node
 
     def valid_words_by_letter(self, start_index: int) -> Set[str]:
         """Return all valid words that begin at some index"""
@@ -78,6 +90,16 @@ class Oracle(object):
     def valid_paths_by_word(self, w: str, start_index: int) -> Iterator[List[int]]:
         return self._word_path_mapping[(start_index, w)]
 
+    @staticmethod
+    def or_integer_with_indices(num: int, indices: List[int]):
+        """Compute logical OR between a float (num)
+        and a list of bits of a number = 1
+        """
+        result = num
+        for index in indices:
+            result |= (1 << index)
+        return result
+
     def submit_word(
         self,
         game: Game,
@@ -92,10 +114,10 @@ class Oracle(object):
         # any score
         best_path = []
         for path in paths:
-            path_state = sum(2 ** n for n in path)
             best_path = path
-            if (new_state := game.state | path_state) > game.state:
+            if (new_state := self.or_integer_with_indices(game.state, path)) > game.state:
                 break
+
         # If no best path, then we have no valid paths
         if len(best_path) == 0:
             return None

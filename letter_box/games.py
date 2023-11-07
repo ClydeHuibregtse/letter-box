@@ -76,7 +76,8 @@ class Game(object):
         return "\n" + "\n".join("".join(char.ljust(5) for char in board[r, :]) for r in range(board.shape[0])) + "\n"
 
     def to_binary(self) -> str:
-        return bin(self.state)[2:]
+        fmt_str = f"0{len(self.flat_letters)}b"
+        return f"{self.state:{fmt_str}}"
 
     def update_state(self, state: int) -> "Game":
         """Ingest a new state and emit a new Game object with the new state"""

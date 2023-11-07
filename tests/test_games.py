@@ -8,7 +8,7 @@ from letter_box.utils import (
     build_letters
 )
 from letter_box.games import Game
-from letter_box.graph_solutions import GraphNode
+from letter_box.graphs import GraphNode
 
 
 def test_game_ascii_render():
@@ -60,7 +60,12 @@ def test_graph_nodes():
 
 def test_trajectory():
     """Tests the implementation of Trajectory"""
-    solve(S=5, N=10)
+    N = 10
+    import time
+    now = time.time()
+    for _ in range(N):
+        solve(S=5, N=10)
+    print((time.time() - now) / N)
 
 
 if __name__ == "__main__":

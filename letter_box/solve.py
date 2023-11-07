@@ -7,7 +7,7 @@ from .utils import (
 )
 from .games import Game
 from .oracles import Oracle
-from .graph_solutions import (
+from .graphs import (
     Trajectory,
     GraphNode
 )
@@ -57,5 +57,7 @@ def solve(
             # Increment our temperature
             T -= t_idx / N
         print(l, best_trajectory, len(best_trajectory.words))
+
+    print(oracle._graph_nodes)
 
     return letters, best_trajectory

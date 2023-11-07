@@ -1,7 +1,6 @@
 """Various classes to support the implementation of the shortest path
 graph algorithm"""
-from typing import List, Dict, Tuple, Optional, Iterator
-
+from typing import List, Dict, Tuple, Optional, Iterator, Set
 from attrs import define, field
 import numpy as np
 
@@ -17,7 +16,7 @@ class DeepScore():
     nodes: List["GraphNode"] = field()
 
 
-@define
+@define()
 class GraphNode():
 
     state: Game = field()
@@ -26,6 +25,8 @@ class GraphNode():
     last_index: int = field()
     oracle: Oracle = field()
     edges: Dict[str, Tuple[float, "GraphNode", List[int]]] = field(factory=dict)
+
+    _hash: int = field(default=0)
 
     @classmethod
     def new(
@@ -36,8 +37,14 @@ class GraphNode():
     ) -> "GraphNode":
         oracle = oracle or Oracle(game)
         return GraphNode(
-            game, last_index, oracle
+            game, last_index, oracle, hash=hash((game.state, last_index))
         )
+
+    def __repr__(self) -> str:
+        return f"GraphNode({self.state}, e={len(self.edges)}, i={self.last_index}, oracle={id(self.oracle)})"
+
+    def __hash__(self) -> int:
+        return self._hash
 
     def find_edges(self, depth_of_search: int = 1):
 
@@ -48,38 +55,59 @@ class GraphNode():
         # Populate the edges that are pointed away from this node
         if len(self.edges) == 0:
             S = len(self.state.flat_letters) // 4
-            self.edges = GraphNode.compute_edges(self, self.last_index, S)
+            self.edges = self.compute_edges(self.last_index, S)
 
         # Recurse depending on depth
         for w, (s, e_node, e_path) in self.edges.items():
             e_node.find_edges(depth_of_search=depth_of_search - 1)
 
-    @staticmethod
-    def compute_edges(node: "GraphNode", last_index: int, S: int) -> Dict[str, Tuple[float, "GraphNode", List[int]]]:
+    def compute_edges(self, last_index: int, S: int) -> Dict[str, Tuple[float, "GraphNode", List[int]]]:
 
         edges = dict()
-        for word in node.oracle.valid_words_by_letter(last_index):
-
-            if (res := node.oracle.submit_word(node.state, word, last_index)) is None:
+        for word in self.oracle.valid_words_by_letter(last_index):
+            if (res := self.oracle.submit_word(self.state, word, last_index)) is None:
                 continue
             next_state, path = res
-            next_node = GraphNode.new(
-                next_state, path[-1], oracle=node.oracle
-            )
+            # next_node = GraphNode.new(
+            #     next_state, path[-1], oracle=self.oracle
+            # )
+            cached_node = self.oracle.get_graph_node(next_state.state, path[-1])
+            if cached_node is None:
+                next_node = GraphNode.new(
+                    next_state, path[-1], oracle=self.oracle
+                )
+                self.oracle.set_graph_node(next_state.state, path[-1], next_node)
+            else:
+                next_node = cached_node
+
             edges[word] = (
-                GraphNode.transition_score(node, next_node),
+                GraphNode.transition_score(self, next_node),
                 next_node,
                 path
             )
         return edges
 
-    def compute_scores(self, depth_of_search: int = 1) -> List["DeepScore"]:
+    def compute_scores(self, depth_of_search: int = 1, seen: Optional[Set["GraphNode"]] = None) -> List["DeepScore"]:
 
-        scores = []
+        if seen is None:
+            seen = set()
+
+        scores = list()
         for w, (s, e, p) in self.edges.items():
 
+            # Cycle detection: if we've already been to this node,
+            # we know there MUST be a faster route there, so give this
+            # trajectory a bad score
+            if e in seen:
+                # scores.append(DeepScore([w], -10, [e]))
+                continue
+            seen.add(e)
+
             # First, recurse and get all scores from the subtree
-            subgraph_scores = e.compute_scores()
+            subgraph_scores = e.compute_scores(
+                seen=seen,
+                depth_of_search=depth_of_search - 1
+            )
 
             # If no subgraph exists, just add this score
             if len(subgraph_scores) == 0 or depth_of_search == 1:
@@ -95,7 +123,7 @@ class GraphNode():
                             [w] + sg_score.words, s + sg_score.score, [e] + sg_score.nodes
                         )
                     )
-
+        # print(scores)
         return scores
 
     @staticmethod
@@ -117,7 +145,8 @@ class GraphNode():
         # already been found
         self.find_edges(depth_of_search=depth_of_search)
         # Compute the depth_of_search score for each leaf node
-        scores = np.array(self.compute_scores())
+        c_scores = self.compute_scores(depth_of_search=depth_of_search)
+        scores = np.array(c_scores)
 
         # Select an edge probabilistically
         p_scores = np.array([s.score ** 10 for s in scores])
