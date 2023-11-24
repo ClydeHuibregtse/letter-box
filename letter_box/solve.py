@@ -56,6 +56,10 @@ def solve(
                 best_trajectory = t
             # Increment our temperature
             T -= t_idx / N
+
+        assert best_trajectory is not None, \
+            f"No solution found for '{l}' at index {i}"
+
         print(l, best_trajectory, len(best_trajectory.words))
 
     print(oracle._graph_nodes)

@@ -4,10 +4,6 @@ from typing import List, Dict, Set
 
 import numpy as np
 
-from .utils import (
-    state_factory
-)
-
 
 @define
 class Game(object):

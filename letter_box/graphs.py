@@ -15,6 +15,9 @@ class DeepScore():
     score: float = field()
     nodes: List["GraphNode"] = field()
 
+    def __len__(self) -> int:
+        return len(self.words)
+
 
 @define()
 class GraphNode():
@@ -68,9 +71,6 @@ class GraphNode():
             if (res := self.oracle.submit_word(self.state, word, last_index)) is None:
                 continue
             next_state, path = res
-            # next_node = GraphNode.new(
-            #     next_state, path[-1], oracle=self.oracle
-            # )
             cached_node = self.oracle.get_graph_node(next_state.state, path[-1])
             if cached_node is None:
                 next_node = GraphNode.new(
@@ -89,6 +89,10 @@ class GraphNode():
 
     def compute_scores(self, depth_of_search: int = 1, seen: Optional[Set["GraphNode"]] = None) -> List["DeepScore"]:
 
+        # If we've run out of depth, exit
+        if depth_of_search == 0:
+            return []
+
         if seen is None:
             seen = set()
 
@@ -96,17 +100,16 @@ class GraphNode():
         for w, (s, e, p) in self.edges.items():
 
             # Cycle detection: if we've already been to this node,
-            # we know there MUST be a faster route there, so give this
-            # trajectory a bad score
+            # we know there MUST be a faster route there, so don't
+            # include this DeepScore
             if e in seen:
-                # scores.append(DeepScore([w], -10, [e]))
                 continue
             seen.add(e)
 
             # First, recurse and get all scores from the subtree
             subgraph_scores = e.compute_scores(
-                seen=seen,
-                depth_of_search=depth_of_search - 1
+                depth_of_search=depth_of_search - 1,
+                seen=seen
             )
 
             # If no subgraph exists, just add this score
@@ -123,7 +126,6 @@ class GraphNode():
                             [w] + sg_score.words, s + sg_score.score, [e] + sg_score.nodes
                         )
                     )
-        # print(scores)
         return scores
 
     @staticmethod

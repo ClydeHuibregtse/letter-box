@@ -122,6 +122,7 @@ class CircularIterator(Generic[IteratorVal]):
             except StopIteration:
                 self._empty = True
                 return None
+        return None
 
     def __next__(self):
         val = self._get_value_at_index(self._current_index)
