@@ -12,7 +12,7 @@ from .utils import RNG
 
 
 @define
-class DeepScore():
+class DeepScore:
     words: List[str] = field()
     score: float = field()
     nodes: List["GraphNode"] = field()
@@ -22,8 +22,7 @@ class DeepScore():
 
 
 @define()
-class GraphNode():
-
+class GraphNode:
     state: Game = field()
     # Consider what happens when two divergent trajectories return to a shared state with
     # a different "last_index" - I suspect this is not likely nor impactful to performance
@@ -35,15 +34,10 @@ class GraphNode():
 
     @classmethod
     def new(
-        cls,
-        game: Game,
-        last_index: int,
-        oracle: Optional[Oracle] = None
+        cls, game: Game, last_index: int, oracle: Optional[Oracle] = None
     ) -> "GraphNode":
         oracle = oracle or Oracle(game)
-        return GraphNode(
-            game, last_index, oracle, hash=hash((game.state, last_index))
-        )
+        return GraphNode(game, last_index, oracle, hash=hash((game.state, last_index)))
 
     def __repr__(self) -> str:
         return f"GraphNode({self.state}, e={len(self.edges)}, i={self.last_index}, oracle={id(self.oracle)})"
@@ -52,7 +46,6 @@ class GraphNode():
         return self._hash
 
     def find_edges(self, depth_of_search: int = 1):
-
         # Once we've run out of layers, exit
         if depth_of_search == 0:
             return
@@ -66,8 +59,9 @@ class GraphNode():
         for w, (s, e_node, e_path) in self.edges.items():
             e_node.find_edges(depth_of_search=depth_of_search - 1)
 
-    def compute_edges(self, last_index: int, S: int) -> Dict[str, Tuple[float, "GraphNode", List[int]]]:
-
+    def compute_edges(
+        self, last_index: int, S: int
+    ) -> Dict[str, Tuple[float, "GraphNode", List[int]]]:
         edges = dict()
         for word in self.oracle.valid_words_by_letter(last_index):
             if (res := self.oracle.submit_word(self.state, word, last_index)) is None:
@@ -75,22 +69,17 @@ class GraphNode():
             next_state, path = res
             cached_node = self.oracle.get_graph_node(next_state.state, path[-1])
             if cached_node is None:
-                next_node = GraphNode.new(
-                    next_state, path[-1], oracle=self.oracle
-                )
+                next_node = GraphNode.new(next_state, path[-1], oracle=self.oracle)
                 self.oracle.set_graph_node(next_state.state, path[-1], next_node)
             else:
                 next_node = cached_node
 
-            edges[word] = (
-                GraphNode.transition_score(self, next_node),
-                next_node,
-                path
-            )
+            edges[word] = (GraphNode.transition_score(self, next_node), next_node, path)
         return edges
 
-    def compute_scores(self, depth_of_search: int = 1, seen: Optional[Set["GraphNode"]] = None) -> List["DeepScore"]:
-
+    def compute_scores(
+        self, depth_of_search: int = 1, seen: Optional[Set["GraphNode"]] = None
+    ) -> List["DeepScore"]:
         # Collect the DeepScores of length-"depth_of_search"
         scores = []
 
@@ -106,11 +95,8 @@ class GraphNode():
         #   Each element of the queue is a DeepScore, for the incremental
         #   nodes leading to the final node, from the root node.
         # So we begin with the empty DeepScore
-        node_queue = deque([
-            DeepScore([], 0, [])
-        ])
+        node_queue = deque([DeepScore([], 0, [])])
         while node_queue:
-
             # Get the DeepScore with the nodes whose edges we
             # should search next
             deep_score = node_queue.popleft()
@@ -137,7 +123,9 @@ class GraphNode():
 
                     node_queue.append(
                         DeepScore(
-                            deep_score.words + [w], deep_score.score + s, deep_score.nodes + [e]
+                            deep_score.words + [w],
+                            deep_score.score + s,
+                            deep_score.nodes + [e],
                         )
                     )
 
@@ -150,11 +138,8 @@ class GraphNode():
         return float(n2.state.score() - n1.state.score())
 
     def visit(
-        self,
-        T: float,
-        depth_of_search: int = 1
+        self, T: float, depth_of_search: int = 1
     ) -> Optional[Tuple[List[str], List[List[int]], List["GraphNode"]]]:
-
         if self.state.is_win():
             return None
 
@@ -166,7 +151,7 @@ class GraphNode():
         scores = np.array(c_scores)
 
         # Select an edge probabilistically
-        p_scores = np.array([s.score ** 10 for s in scores])
+        p_scores = np.array([s.score**10 for s in scores])
 
         # Add variance to the scores until we've refined our temperature
         sum_scores = p_scores.sum()
@@ -195,13 +180,14 @@ class GraphNode():
 
 
 @define
-class Trajectory():
-
+class Trajectory:
     words: List[str] = field(factory=list)
     paths: List[List[int]] = field(factory=list)
     states: List[Game] = field(factory=list)
 
-    def add_words_states(self, words: List[str], paths: List[List[int]], states: List[Game]):
+    def add_words_states(
+        self, words: List[str], paths: List[List[int]], states: List[Game]
+    ):
         self.words.extend(words)
         self.paths.extend(paths)
         self.states.extend(states)

@@ -1,12 +1,6 @@
+from letter_box.solve import solve
 
-from letter_box.solve import (
-    solve
-)
-
-from letter_box.utils import (
-    RNG,
-    build_letters
-)
+from letter_box.utils import RNG, build_letters
 from letter_box.games import Game
 from letter_box.graphs import GraphNode
 
@@ -18,7 +12,7 @@ def test_game_ascii_render():
     S = 10
     letters = build_letters(S)
     game = Game.new(letters)
-    game.state = int(RNG.random() * 2 ** 32)
+    game.state = int(RNG.random() * 2**32)
     print(game.to_ascii())
 
 
@@ -30,10 +24,7 @@ def test_graph_nodes():
     game = Game.new(letters)
 
     # Construct a graph node
-    n = GraphNode.new(
-        game,
-        1
-    )
+    n = GraphNode.new(game, 1)
 
     # Visit this node and evaluate what edges come out
     new_words, new_paths, nodes = n.visit(1.0)
@@ -55,10 +46,7 @@ def test_graph_nodes():
         if e_node != node
     )
 
-    node = GraphNode.new(
-        game,
-        1
-    )
+    node = GraphNode.new(game, 1)
     node.find_edges(depth_of_search=2)
     assert len(node.edges) > 0
     assert all(len(e_node.edges) > 0 for w, (s, e_node, e_path) in node.edges.items())
@@ -67,7 +55,9 @@ def test_graph_nodes():
     scores = node.compute_scores()  # Single depth of search
     # We should get a score for every edge that does not form a cycle, which for a depth of 1,
     # amounts to just the unique nodes in our edge set
-    assert len(scores) == len(set(e_node for w, (s, e_node, e_path) in node.edges.items()))
+    assert len(scores) == len(
+        set(e_node for w, (s, e_node, e_path) in node.edges.items())
+    )
 
     # With a depth of 2, the number of scores we compute is equal to the total number of
     # unique nodes visited in the double search
@@ -100,6 +90,7 @@ def test_trajectory():
     """Tests the implementation of Trajectory"""
     N = 10
     import time
+
     now = time.time()
     for _ in range(N):
         solve(S=5, N=10)

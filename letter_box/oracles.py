@@ -1,16 +1,9 @@
-
-from typing import (
-    Dict, List, Tuple, Set, Optional, Iterator, TYPE_CHECKING
-)
+from typing import Dict, List, Tuple, Set, Optional, Iterator, TYPE_CHECKING
 import pandas as pd
 from attrs import define, field
 
 from .games import Game
-from .utils import (
-    can_make_word,
-    CircularIterator,
-    ValidLiterals
-)
+from .utils import can_make_word, CircularIterator, ValidLiterals
 
 if TYPE_CHECKING:
     from .graphs import GraphNode
@@ -20,7 +13,6 @@ VALID_LITERALS = ValidLiterals.build()
 
 @define
 class Oracle(object):
-
     game: Game = field()
     _word_mapping: Dict[int, Set[str]] = field(factory=dict)
     _word_path_mapping: Dict[Tuple[int, str], CircularIterator] = field(factory=dict)
@@ -28,7 +20,6 @@ class Oracle(object):
 
     @classmethod
     def new(cls, letters: List[str]) -> "Oracle":
-
         # Build the barren game from the
         # provided letters
         game = Game.new(letters)
@@ -50,15 +41,23 @@ class Oracle(object):
         edges = list()
         for graph_node in self._graph_nodes.values():
             nodes.append(
-                (id(graph_node), graph_node.state.to_binary(), graph_node.state.state, graph_node.last_index, graph_node.state.score())
+                (
+                    id(graph_node),
+                    graph_node.state.to_binary(),
+                    graph_node.state.state,
+                    graph_node.last_index,
+                    graph_node.state.score(),
+                )
             )
             for w, (s, e, p) in graph_node.edges.items():
-                edges.append(
-                    (id(graph_node), id(e), w, s + 1)
-                )
+                edges.append((id(graph_node), id(e), w, s + 1))
 
-        node_df = pd.DataFrame.from_records(nodes, columns=["id", "Label", "state", "index", "score"])
-        edge_df = pd.DataFrame.from_records(edges, columns=["Source", "Target", "Label", "Weight"])
+        node_df = pd.DataFrame.from_records(
+            nodes, columns=["id", "Label", "state", "index", "score"]
+        )
+        edge_df = pd.DataFrame.from_records(
+            edges, columns=["Source", "Target", "Label", "Weight"]
+        )
         return node_df, edge_df
 
     def valid_words_by_letter(self, start_index: int) -> Set[str]:
@@ -73,9 +72,7 @@ class Oracle(object):
             return self._word_mapping[start_index]
 
         # Otherwise, compute the valid words cache
-        self._word_mapping[start_index] = self._build_valid_words_cache(
-            start_index
-        )
+        self._word_mapping[start_index] = self._build_valid_words_cache(start_index)
         return self._word_mapping[start_index]
 
     def _build_valid_words_cache(self, start_index: int) -> Set[str]:
@@ -85,7 +82,6 @@ class Oracle(object):
 
         valid_words = set()
         for w in candidate_words:
-
             # Wrap the result of our can_make_word generator in a
             # wrapper that makes it cached and circular, so we can
             # cheaply query from it over and over, if the same word is tried
@@ -97,8 +93,9 @@ class Oracle(object):
                 )
             )
             if (
-                start_index in self.game.letters[w[0]]       # First char is in right location
-                and valid_paths.peek() is not None           # Remainder is valid
+                start_index
+                in self.game.letters[w[0]]  # First char is in right location
+                and valid_paths.peek() is not None  # Remainder is valid
             ):
                 # Extend the cache
                 if (start_index, w) not in self._word_path_mapping:
@@ -117,14 +114,11 @@ class Oracle(object):
         """
         result = num
         for index in indices:
-            result |= (1 << index)
+            result |= 1 << index
         return result
 
     def submit_word(
-        self,
-        game: Game,
-        w: str,
-        start_index: int
+        self, game: Game, w: str, start_index: int
     ) -> Optional[Tuple[Game, List[int]]]:
         """Submit a word and return a new Game and the path used to get there"""
         # Get all valid paths for this word (may hit cache)
@@ -135,7 +129,9 @@ class Oracle(object):
         best_path = []
         for path in paths:
             best_path = path
-            if (new_state := self.or_integer_with_indices(game.state, path)) > game.state:
+            if (
+                new_state := self.or_integer_with_indices(game.state, path)
+            ) > game.state:
                 break
 
         # If no best path, then we have no valid paths

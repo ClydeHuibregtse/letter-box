@@ -7,7 +7,6 @@ import numpy as np
 
 @define
 class Game(object):
-
     letters: Dict[str, Set[int]] = field()
     state: int = field()
     S: int = field()
@@ -40,7 +39,6 @@ class Game(object):
 
         # Draw letters
         for letter, locs in self.letters.items():
-
             for loc in locs:
                 # Determine where on the board the letter lies
                 side = loc // S
@@ -69,7 +67,14 @@ class Game(object):
                     board[S + 3 - (index_along_side + 2), 0] = letter
                     board[S + 3 - (index_along_side + 2), 1] = filled_char
 
-        return "\n" + "\n".join("".join(char.ljust(5) for char in board[r, :]) for r in range(board.shape[0])) + "\n"
+        return (
+            "\n"
+            + "\n".join(
+                "".join(char.ljust(5) for char in board[r, :])
+                for r in range(board.shape[0])
+            )
+            + "\n"
+        )
 
     def to_binary(self) -> str:
         fmt_str = f"0{len(self.flat_letters)}b"
@@ -77,9 +82,7 @@ class Game(object):
 
     def update_state(self, state: int) -> "Game":
         """Ingest a new state and emit a new Game object with the new state"""
-        return Game(
-            self.letters, state, self.S, self.flat_letters
-        )
+        return Game(self.letters, state, self.S, self.flat_letters)
 
     def is_win(self) -> bool:
         return self.score() == len(self.flat_letters)

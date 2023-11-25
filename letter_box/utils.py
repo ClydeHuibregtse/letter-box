@@ -22,8 +22,12 @@ class ValidLiterals:
 
     @classmethod
     def build(cls) -> "ValidLiterals":
-
-        words = set(x.lower() for letter_words in WORDS for x in sorted(letter_words.keys()) if re.match(r'^[a-zA-Z]+$', x))
+        words = set(
+            x.lower()
+            for letter_words in WORDS
+            for x in sorted(letter_words.keys())
+            if re.match(r"^[a-zA-Z]+$", x)
+        )
 
         words_by_letter: Dict[str, Set[str]] = dict()
         for w in words:
@@ -33,38 +37,42 @@ class ValidLiterals:
 
 
 def build_letters(S: int) -> List[str]:
-
-    letter_frequencies = np.array([
-        0.0817,  # A
-        0.0149,  # B
-        0.0278,  # C
-        0.0425,  # D
-        0.127,   # E
-        0.0223,  # F
-        0.0202,  # G
-        0.0609,  # H
-        0.0697,  # I
-        0.0015,  # J
-        0.0077,  # K
-        0.0403,  # L
-        0.0241,  # M
-        0.0675,  # N
-        0.0751,  # O
-        0.0193,  # P
-        0.0010,  # Q
-        0.0599,  # R
-        0.0633,  # S
-        0.0906,  # T
-        0.0276,  # U
-        0.0098,  # V
-        0.0236,  # W
-        0.0015,  # X
-        0.0197,  # Y
-        0.0007   # Z
-    ])
+    letter_frequencies = np.array(
+        [
+            0.0817,  # A
+            0.0149,  # B
+            0.0278,  # C
+            0.0425,  # D
+            0.127,  # E
+            0.0223,  # F
+            0.0202,  # G
+            0.0609,  # H
+            0.0697,  # I
+            0.0015,  # J
+            0.0077,  # K
+            0.0403,  # L
+            0.0241,  # M
+            0.0675,  # N
+            0.0751,  # O
+            0.0193,  # P
+            0.0010,  # Q
+            0.0599,  # R
+            0.0633,  # S
+            0.0906,  # T
+            0.0276,  # U
+            0.0098,  # V
+            0.0236,  # W
+            0.0015,  # X
+            0.0197,  # Y
+            0.0007,  # Z
+        ]
+    )
     letter_frequencies /= letter_frequencies.sum()
     letters = [c for c in string.ascii_lowercase]
-    return np.random.choice(letters, p=letter_frequencies, size=S * 4, replace=True).tolist()
+    return np.random.choice(
+        letters, p=letter_frequencies, size=S * 4, replace=True
+    ).tolist()
+
 
 # def build_letters(S: int) -> List[str]:
 
@@ -94,6 +102,7 @@ class CircularIterator(Generic[IteratorVal]):
     """A thin wrapper for an Iterator that cycles over an iterator,
     while caching seen value
     """
+
     iterator: Iterator[IteratorVal] = field()
     _current_index: int = field(default=0)
     _num_yielded: int = field(default=0)
@@ -106,7 +115,11 @@ class CircularIterator(Generic[IteratorVal]):
         return id(self.iterator)
 
     def _get_value_at_index(self, index: int) -> Optional[IteratorVal]:
-        index = self._current_index if not self._empty or self._cache_len == 0 else self._current_index % self._cache_len
+        index = (
+            self._current_index
+            if not self._empty or self._cache_len == 0
+            else self._current_index % self._cache_len
+        )
         if index < self._cache_len:
             # We're looking for a value we've already computed
             return self._cache[index]
@@ -181,12 +194,8 @@ class CircularIterator(Generic[IteratorVal]):
 
 
 def can_make_word(
-    w: str,
-    letters: Dict[str, Set[int]],
-    S: int,
-    trajectory: Optional[List[int]] = None
+    w: str, letters: Dict[str, Set[int]], S: int, trajectory: Optional[List[int]] = None
 ) -> Iterator[List[int]]:
-
     # Success case
     if w == "" and trajectory is not None:
         yield trajectory
@@ -204,13 +213,10 @@ def can_make_word(
         trajectory = []
 
     for next_loc in next_locs:
-
         # Failure case: we are on the same side
         cur_loc = trajectory[-1] if trajectory else -1
         if cur_loc // S == next_loc // S:
             continue
 
         # Recursively try each possible next loc
-        yield from can_make_word(
-            w_else, letters, S, trajectory=trajectory + [next_loc]
-        )
+        yield from can_make_word(w_else, letters, S, trajectory=trajectory + [next_loc])

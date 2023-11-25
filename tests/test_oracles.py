@@ -1,4 +1,3 @@
-
 from letter_box.oracles import Oracle
 
 
@@ -21,8 +20,22 @@ def test_word_caching():
     #   4. [15, 6, 2, 11] # e's on the first and second edge (reversed 2)
     # We have to be able to coerce both sets of these
     letters = [
-        "h", "q", "e", "o", "d", "e", "e", "a",
-        "o", "a", "h", "n", "f", "g", "c", "t"
+        "h",
+        "q",
+        "e",
+        "o",
+        "d",
+        "e",
+        "e",
+        "a",
+        "o",
+        "a",
+        "h",
+        "n",
+        "f",
+        "g",
+        "c",
+        "t",
     ]
 
     oracle = Oracle.new(letters)
