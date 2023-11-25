@@ -1,4 +1,4 @@
-import os
+
 from typing import (
     Dict, List, Tuple, Set, Optional, Iterator, TYPE_CHECKING
 )
@@ -15,7 +15,7 @@ from .utils import (
 if TYPE_CHECKING:
     from .graphs import GraphNode
 
-VALID_LITERALS = ValidLiterals.build(os.path.join(os.path.dirname(__file__), "words.json"))
+VALID_LITERALS = ValidLiterals.build()
 
 
 @define

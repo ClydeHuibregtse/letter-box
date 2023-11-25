@@ -31,7 +31,7 @@ jobs:
     - name: Lint with flake8
       run: |
         # Custom flake8 settings
-        flake8 . --ignore=W503,E501
+        flake8 . --ignore=W503,E501 --exclude=words.py
     - name: Typecheck with mypy
       run: |
         # Parse python package name from the repo name

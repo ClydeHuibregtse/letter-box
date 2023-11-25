@@ -1,4 +1,4 @@
-import os
+
 import pytest
 from letter_box.utils import (
     ValidLiterals,
@@ -10,7 +10,7 @@ from letter_box.utils import (
 def test_literals():
     """Tests implementation of ValidLiterals"""
 
-    vl = ValidLiterals.build(os.path.join(os.path.dirname(__file__), "..", "letter_box", "words.json"))
+    vl = ValidLiterals.build()
 
     print(f"Total number of literals in the source: {len(vl.words)}")
     print(f"Total number of starting letters in the source: {len(vl.words_by_letter)}")

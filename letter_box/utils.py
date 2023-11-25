@@ -2,11 +2,12 @@
 
 from typing import List, Any, Dict, Set, Optional, Iterator, Tuple, Generic, TypeVar
 import string
-import json
 import re
 
 from attrs import define, field
 import numpy as np
+
+from .words import WORDS
 
 RNG = np.random.default_rng(seed=69420)
 """A random number generator used to establish a global seed"""
@@ -20,15 +21,14 @@ class ValidLiterals:
     words_by_letter: Dict[str, Set[str]] = field()
 
     @classmethod
-    def build(cls, path_to_source: str) -> "ValidLiterals":
+    def build(cls) -> "ValidLiterals":
 
-        with open(path_to_source, "r") as f:
-            words = set(x.lower() for letter_words in json.load(f) for x in sorted(letter_words.keys()) if re.match(r'^[a-zA-Z]+$', x))
+        words = set(x.lower() for letter_words in WORDS for x in sorted(letter_words.keys()) if re.match(r'^[a-zA-Z]+$', x))
 
-            words_by_letter: Dict[str, Set[str]] = dict()
-            for w in words:
-                words_w_letter = words_by_letter.setdefault(w[0], set())
-                words_w_letter.add(w)
+        words_by_letter: Dict[str, Set[str]] = dict()
+        for w in words:
+            words_w_letter = words_by_letter.setdefault(w[0], set())
+            words_w_letter.add(w)
         return cls(words, words_by_letter)
 
 
