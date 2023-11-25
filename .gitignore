@@ -6,3 +6,4 @@ deps/
 .mypy_cache/
 *.pstats
 .DS_Store
+profiles/

@@ -1,12 +1,7 @@
-
 import pytest
 import string
 import time
-from letter_box.utils import (
-    can_make_word,
-    build_letters,
-    RNG
-)
+from letter_box.utils import can_make_word, build_letters, RNG
 from letter_box.games import Game
 
 
@@ -38,6 +33,7 @@ def test_can_make_word_profile():
 
     import pandas as pd
     import seaborn as sns
+
     df = pd.DataFrame(columns=["S", "L", "can_make_word_time"])
 
     for S in range(1, 51, 5):
@@ -49,6 +45,7 @@ def test_can_make_word_profile():
     print(df)
 
     import matplotlib.pyplot as plt
+
     fig, ax = plt.subplots(figsize=(10, 10))
     # pos = ax.imshow(
     #     df.pivot(index='S', columns='L', values='can_make_word_time'),
@@ -57,7 +54,7 @@ def test_can_make_word_profile():
     # fig.colorbar(pos, ax=ax)
 
     sns.heatmap(
-        df.pivot(index='S', columns='L', values='can_make_word_time'),
+        df.pivot(index="S", columns="L", values="can_make_word_time"),
         cmap="coolwarm",
         cbar=True,
     )
@@ -65,7 +62,6 @@ def test_can_make_word_profile():
 
 
 def test_can_make_word_double_letter():
-
     # Example Game
     # -----------------------
     #     h    q    e    o
@@ -79,19 +75,33 @@ def test_can_make_word_double_letter():
     # Solution paths are:
     #   1. [15, 2, 5, 11] # e's on the first and second edge
     #   2. [15, 2, 6, 11] # e's on the first and second edge (other e)
-    #   3. [15, 5, 2, 11] # e's on the first and second edge (reversed 1 - ignore)
-    #   4. [15, 6, 2, 11] # e's on the first and second edge (reversed 2 - ignore)
+    #   3. [15, 5, 2, 11] # e's on the first and second edge (reversed 1)
+    #   4. [15, 6, 2, 11] # e's on the first and second edge (reversed 2)
     # We have to be able to coerce both sets of these
     letters = [
-        "h", "q", "e", "o", "d", "e", "e", "a",
-        "o", "a", "h", "n", "f", "g", "c", "t"
+        "h",
+        "q",
+        "e",
+        "o",
+        "d",
+        "e",
+        "e",
+        "a",
+        "o",
+        "a",
+        "h",
+        "n",
+        "f",
+        "g",
+        "c",
+        "t",
     ]
 
     game = Game.new(letters)
 
-    assert can_make_word("teen", game.letters, game.S) == [
+    assert list(can_make_word("teen", game.letters, game.S)) == [
         [15, 2, 5, 11],
         [15, 2, 6, 11],
         [15, 5, 2, 11],
-        [15, 6, 2, 11]
+        [15, 6, 2, 11],
     ]
