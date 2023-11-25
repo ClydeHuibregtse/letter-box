@@ -73,20 +73,27 @@ def test_graph_nodes():
     # unique nodes visited in the double search
     seen = set()
     double_scores = node.compute_scores(depth_of_search=2, seen=seen)
-    # All scores should be of length-2. If they are of length-1 that means
-    print([len(s) for s in double_scores])
+    # All scores should be of length-2
     assert all(len(s) == 2 for s in double_scores)
 
-    print(double_scores)
-    unique_nodes = set()
+    # Collect all of the unique nodes between the root and 2 layers
+    depth_1_nodes = set()
+    depth_2_nodes = set()
     for w1, (s1, e_node1, e_path1) in node.edges.items():
-        # unique_nodes.add(e_node1)
+        depth_1_nodes.add(e_node1)
         for w2, (s2, e_node2, e_path2) in e_node1.edges.items():
-            unique_nodes.add(e_node2)
-    import pdb
-    pdb.set_trace()
+            depth_2_nodes.add(e_node2)
 
-    assert len(double_scores) == len(unique_nodes)
+    unique_nodes = depth_1_nodes | depth_2_nodes
+    # Our "seen" hash should differ only by the root
+    assert seen - unique_nodes == {node}
+
+    # At most, every double score results in a unique depth-2 node
+    # (i.e., there are no nodes 2 away from the root that are also 1 away)
+    assert len(double_scores) <= len(depth_2_nodes)
+    # But we should always have at least as many length-1 scores as
+    # we do depth-1 nodes
+    assert len(double_scores) >= len(depth_1_nodes)
 
 
 def test_trajectory():

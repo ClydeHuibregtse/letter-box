@@ -62,6 +62,4 @@ def solve(
 
         print(l, best_trajectory, len(best_trajectory.words))
 
-    print(oracle._graph_nodes)
-
     return letters, best_trajectory

@@ -2,6 +2,8 @@
 graph algorithm"""
 from typing import List, Dict, Tuple, Optional, Iterator, Set
 from attrs import define, field
+from collections import deque
+
 import numpy as np
 
 from .games import Game
@@ -89,43 +91,56 @@ class GraphNode():
 
     def compute_scores(self, depth_of_search: int = 1, seen: Optional[Set["GraphNode"]] = None) -> List["DeepScore"]:
 
-        # If we've run out of depth, exit
-        if depth_of_search == 0:
-            return []
+        # Collect the DeepScores of length-"depth_of_search"
+        scores = []
 
+        # Implement a BFS over the nodes to search to a prescribed depth
+
+        # The BFS should omit any path that intercepts a node we've seen at
+        # an earlier depth
         if seen is None:
             seen = set()
+        seen.add(self)
 
-        scores = list()
-        for w, (s, e, p) in self.edges.items():
+        # Create a queue of nodes to check
+        #   Each element of the queue is a DeepScore, for the incremental
+        #   nodes leading to the final node, from the root node.
+        # So we begin with the empty DeepScore
+        node_queue = deque([
+            DeepScore([], 0, [])
+        ])
+        while node_queue:
 
-            # Cycle detection: if we've already been to this node,
-            # we know there MUST be a faster route there, so don't
-            # include this DeepScore
-            if e in seen:
-                continue
-            seen.add(e)
+            # Get the DeepScore with the nodes whose edges we
+            # should search next
+            deep_score = node_queue.popleft()
 
-            # First, recurse and get all scores from the subtree
-            subgraph_scores = e.compute_scores(
-                depth_of_search=depth_of_search - 1,
-                seen=seen
-            )
+            # If we have no nodes, we must be at the root
+            n_visit = deep_score.nodes[-1] if len(deep_score) > 0 else self
 
-            # If no subgraph exists, just add this score
-            if len(subgraph_scores) == 0 or depth_of_search == 1:
-                scores.append(
-                    DeepScore([w], s, [e])
-                )
+            # If the path length is equal to the depth
+            # (+1, since we start with the root node), compute the score
+            # and append it to the scores
+            if len(deep_score) == depth_of_search:
+                scores.append(deep_score)
 
-            # Otherwise, add the edge data to the scores
+            # Otherwise, continue by adding all edge nodes to the queue
+            # unless we've already been there, in which case there is
+            # a guaranteed shorter path
             else:
-                for sg_score in subgraph_scores:
-                    scores.append(
+                # TODO: reconcile what happens if edges is empty
+                # (i.e., we haven't called find_edges to a sufficient depth)
+                for w, (s, e, p) in n_visit.edges.items():
+                    if e in seen:
+                        continue
+                    seen.add(e)
+
+                    node_queue.append(
                         DeepScore(
-                            [w] + sg_score.words, s + sg_score.score, [e] + sg_score.nodes
+                            deep_score.words + [w], deep_score.score + s, deep_score.nodes + [e]
                         )
                     )
+
         return scores
 
     @staticmethod
@@ -163,6 +178,7 @@ class GraphNode():
         p_scores /= p_scores.sum()
 
         new_deepscore: DeepScore = RNG.choice(scores, p=p_scores)
+        # TODO: fix this for depth > 1
         paths = [self.edges[w][2] for w in new_deepscore.words]
         return new_deepscore.words, paths, new_deepscore.nodes
 
