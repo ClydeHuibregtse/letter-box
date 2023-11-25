@@ -1,2 +1,5 @@
 name: letter-box
+title: Letter Box
 version: true
+nav:
+  - modules/ROOT/nav.adoc
