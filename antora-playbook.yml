@@ -1,6 +1,6 @@
 site:
   title: Letter Box
-  start_page: component-b::index.adoc
+  start_page: letter-box::index.adoc
 content:
   sources:
   - url: .
