@@ -8,5 +8,6 @@ content:
     start_path: docs/
 ui:
   bundle:
-    url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/HEAD/raw/build/ui-bundle.zip?job=bundle-stable
+    # TODO: Migrate this to a live link
+    url: ./docs/ui-bundle.zip
     snapshot: true
