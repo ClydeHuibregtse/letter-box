@@ -1,5 +1,5 @@
 
-
+import os
 from typing import List, Optional
 
 from .utils import (
@@ -17,7 +17,8 @@ def solve(
     letters: Optional[List[str]] = None,
     S: Optional[int] = None,
     N: int = 1_000,
-    depth: int = 1
+    depth: int = 1,
+    graph_dir: Optional[str] = None
 ):
 
     # Auto-construct letters if not provided
@@ -61,5 +62,11 @@ def solve(
             f"No solution found for '{l}' at index {i}"
 
         print(l, best_trajectory, len(best_trajectory.words))
+
+    # Render graph to CSV
+    if graph_dir is not None:
+        nodes, edges = oracle.graph_nodes_to_dfs()
+        nodes.to_csv(os.path.join(graph_dir, "nodes.csv"), index=False)
+        edges.to_csv(os.path.join(graph_dir, "edges.csv"), index=False)
 
     return letters, best_trajectory

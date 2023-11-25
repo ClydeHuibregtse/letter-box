@@ -1,6 +1,8 @@
 import os
-from typing import Dict, List, Tuple, Set, Optional, Iterator, TYPE_CHECKING
-
+from typing import (
+    Dict, List, Tuple, Set, Optional, Iterator, TYPE_CHECKING
+)
+import pandas as pd
 from attrs import define, field
 
 from .games import Game
@@ -40,6 +42,24 @@ class Oracle(object):
     def set_graph_node(self, state: int, letter_index: int, node: "GraphNode"):
         """Store a graph node in the cache"""
         self._graph_nodes[(state, letter_index)] = node
+
+    def graph_nodes_to_dfs(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """Emit both nodes and edges dataframes"""
+        # nodes = [0, self.game.to_binary(), self.game.state, s]
+        nodes = list()
+        edges = list()
+        for graph_node in self._graph_nodes.values():
+            nodes.append(
+                (id(graph_node), graph_node.state.to_binary(), graph_node.state.state, graph_node.last_index, graph_node.state.score())
+            )
+            for w, (s, e, p) in graph_node.edges.items():
+                edges.append(
+                    (id(graph_node), id(e), w, s + 1)
+                )
+
+        node_df = pd.DataFrame.from_records(nodes, columns=["id", "Label", "state", "index", "score"])
+        edge_df = pd.DataFrame.from_records(edges, columns=["Source", "Target", "Label", "Weight"])
+        return node_df, edge_df
 
     def valid_words_by_letter(self, start_index: int) -> Set[str]:
         """Return all valid words that begin at some index"""

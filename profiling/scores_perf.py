@@ -14,7 +14,7 @@ def boolean_state(N: int) -> List[bool]:
 
     (original implementation of this bot used this)
     """
-    return np.random.choice([True, False], size=N)
+    return np.random.choice([True, False], size=N).tolist()
 
 
 def integer_state(N: int) -> int:
