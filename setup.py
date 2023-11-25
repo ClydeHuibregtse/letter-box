@@ -7,5 +7,6 @@ setup(
     install_requires=[
         "attrs~=23.1.0",
         "numpy~=1.24.0",
+        "pandas~=2.1.1",
     ],
 )
