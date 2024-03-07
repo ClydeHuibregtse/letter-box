@@ -1,3 +1,89 @@
 = Letter Box
+:stem: latexmath
 
-Here's the index
+== Introduction
+
+Welcome to the first installment of a series of "blog"-posts I'm (informally) referring to as "I Bet He's Thinking About". It may sound narcissistic (who am I to assume you care what I'm thinking about...?). But in truth, the title is an homage to a recent meme:
+
+image::hallucinate.jpg[Hallucinate Meme]
+
+They range from stupid little tidbits of observational humor, to the downright meaningless:
+
+image::thouts.png[Thouts Meme]
+
+Sometimes I stop myself and realize I've spent my whole day pondering some stupid or meaningless puzzle or thought. I try to explain my thoughts to my friends, and realize for most, I can't seem to convey how I became so fixated on the problem. This is my attempt to put pencil to paper (finger to key...?) and ramble cogently. My goal with these is not to be a pedant. Rather, I'm going to try to make these as easy to write as possible: few rounds of edits, informal language, etc. Hopefully it makes these more digestible. I can always come back for round 2 with a particular project if I return to thinking about it and want to improve my work.
+
+I appreciate anyone who would spend their time reading through my writing. Thanks!
+
+== Letter Boxed
+
+=== My Mission
+
+Growing up, I got hooked on NYT Crosswords on the subway; they were the only source of immediate dopamine you could get as a kid with no cell service. In 2014, the New York Times introduced a new puzzle game to their app, link:https://www.nytimes.com/puzzles/letter-boxed[Letter Boxed]. Try it out! It's fairly simple. Your objective is to enter as few English words as needed to use every letter on the square. There are two rules:
+
+1. Each word must begin with the last letter of the word preceding it (e.g., "cat" can be followed by "toe", but not "rug")
+2. No word may contain two consecutive letters that lie on the same side of the square (e.g., "coax" is invalid)
+
+To illustrate these points, let's look at the following animation (brought to you by the rave math visuals project link:https://www.manim.community[Manim] - this is my first go around with Manim, so forgive the poor quality)
+
+// INSERT IntroBoard GIF
+
+The game is simple. String together enough valid words such that every letter is used at least once and you win. Bonus points are awarded if fewer words are used. My mission is to develop an algorithm that computes winning solutions (i.e., sequences of words) that use a few words as possible. 
+
+=== Initial Thoughts
+
+Given that the original NYT game is only a mere size-stem:[3] ("size-stem:[N]" in my homegrown vernacular implies there are N letters per side, with a total of stem:[4N] letters), I suspect the original game is embarrassingly easy for a computer. I'm curious how my prospective algorithm scales as stem:[N] grows. Obviously, for the English version of the game, only boards up to size-stem:[5] fit within the normal stem:[26]-letter alphabet without repeating letters on the board. Repeated letters aren't a problem for the rules of the game, though, but add a bit of dynamicism to any search process: what if you were to choose the other "t" when entering "cat"? 
+
+But what other limiting phenomena may be manifest at a larger stem:[N]? Not only would we have more letters to cover, but the space of possible valid words that are available at any point in the game grows as well; a pain for any algorithm, for sure. But at a certain size stem:[N], when there are so many letters on each side of the board that every English letter is repeated many times, every English word becomes a valid entry! Hmm... That's an interesting meta-state of the game. At sizes above this critical point, decision-making in all games (until the end game) reduces to the same fundamental decision problem. My best guess is there's an "optimal" English word (or series of words, the one with the longest, highest variety of letters) that is repeated many times over in the optimal solutions to massive games.
+
+Whether that's a feature of the problem or a shortcut to cheap solutions is up to you to decide. I wonder if the algorithm built here can find that pattern. 
+
+One could combat this phenomenon by inventing an alphabet (and associated lexicon of valid words) that scales with stem:[N]. I don't plan to do that here, but maybe I will in a follow-on experiment.
+
+==== Green Eggs and Hamiltonian paths
+
+Take a stab at playing the game online (or watch the animation above). While the game only you to input a sequence of valid words, it draws for you the connections as a series of https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)[graph] edges (arrows) between letters. The game is won when the path traced by all graph edges covers the entire set of vertices (letters). This problem construction is essentially the https://en.wikipedia.org/wiki/Hamiltonian_path[Hamiltonian path] problem. For this problem, it distills to: does there exist a path (between any starting letter and ending letter) that consists of "valid" edges only and that visits every node at least once? And composes the fewest words along the way?
+
+[NOTE]
+====
+Hamiltonian paths don't allow for cycles (i.e. repeat visits to the same letter). Letter Boxed doesn't uphold that restriction.
+
+Additionally, the Hamiltonian path problem is a unique reduction of the more common, notoriously hard https://en.wikipedia.org/wiki/Travelling_salesman_problem[traveling salesman problem]. Both problems are both in the set https://en.wikipedia.org/wiki/NP-completeness[NP-Complete].
+====
+
+Naively, one might think "okay Letter Boxed is just another reformulation of the Hamiltonian path problem, so why bother with this thought experiment?" I am so naive. 
+
+Thinking a layer deeper, the graph abstraction described above that we used to co-opt the Hamiltonian path problem has some fundamental problems. When the graph stem:[G(V, E)] is formalized such that stem:[V] is the set of all letters, and stem:[E] are "valid edges" between such letters, we reach the question: what is a "valid edge"? An edge between two letters in stem:[V] may be included in some words, but not others. More deeply, our graph construction has no notion of a word! The solution is just a sequence of letters (vertices) that are traversed in order. At best, we can guess-and-check if a solution is composed of valid words, but that's not very efficient.
+
+
+==== A Number Speaks a Thousand Words
+
+After playing the game a few more days and pondering the silly nuance, I had a new thought. Your progress within a game (or the "game state") is fully described if you know two things:
+
+. What letters (or more generally, positions on the board) have been used, and
+. What letter must be the start of the next word (i.e., the "current position")
+
+It's not hard to convince yourself of this fact. Put more plainly, it doesn't matter what words you used to consume the letters you did, just that you arrived at that state. For example, you may play "cat" and then "tough" and cover the same letters as "cough" followed by "hatch".
+
+Conveniently, this information can be packaged up as a tuple of two integers. The "current position" is an obvious candidate for one of these integers (i.e., pick a letter to be index stem:[0], and count clockwise up to stem:[4N]). It's less obvious to encode the letter usage as an integer, though. Counting indices around the board like we just did, you could query if each letter has been used, and populate an array of stem:[4N] booleans (e.g., `[True, False, True, True, False, ...]`). But we already have a condensed notation for such a string: binary numbers. Replace every `True` with a stem:[1] and every `False` with a stem:[0] and you're left with a length-stem:[4N] binary string. This becomes our second integer in the tuple as it encodes an integer at most stem:[2^{4N} - 1]. For notation's sake, let's call this tuple
+
+[latex]
+++++
+\begin{align*}
+  (l, s)& \\
+  \text{where }&l = \text{the current index of the next letter, and } \\
+  &s = \text{the integer represented by the binary string above}
+\end{align*}
+++++
+
+There are some phenomena that shake out of this formulation.
+
+For one, the "score" of a game is not stem:[s]. In fact, it's the "bit count" or the https://en.wikipedia.org/wiki/Hamming_weight[Hamming weight] of the integer (the number of stem:[1]s in the binary representation). Intuitively, this says that an stem:[s] of `1000` (in binary) is no greater than `0100` or `0010` (for stem:[N = 1]). We'll return to this phenomenon later when evaluating our resultant algorithm's performance.
+
+Additionally, this formalization of the letter use as a binary string asserts that the entry of a new word to the game is some form of bit-arithmetic operation on the binary string. In fact, this operation is simply the `&` (logical AND). To enter a new word to the game and update the state, simply take the bit-wise `&` of stem:[s] and the string that highlights which letters are used by the new word, called stem:[w]. Programmatically, this is just `s & w`. The winning state of the game occurs when stem:[s = 2^{4N} - 1]
+
+Finally, we may reach a point where bitwise operations are simply untractable for certain game boards. A stem:[64]-bit integer is required to represent a game of size stem:[16]. Some programming languages are "batteries included" and allow you to express integers far larger, though. In any case, I'm feeling ambitious, and hoping to eventually solve "4K" games (i.e., stem:[N > 1000]). I imagine that the normal Python `s & w` may start to be a bottleneck for such massive games (and may be unavailable if we have to migrate to a new language).
+
+This kind of strategy is a tried-and-true method employed by modern Chess engines called https://towardsdatascience.com/dissecting-stockfish-part-1-in-depth-look-at-a-chess-engine-7fddd1d83579[bitboards], where integers represent complex states of regularly structured data. Chess boards have finite size, though, so for our purposes we may have to reevaluate this in the future.
+
+==== 

@@ -98,4 +98,5 @@ def test_trajectory():
 
 
 if __name__ == "__main__":
-    test_trajectory()
+    # test_trajectory()
+    solve([x for x in "eicaoxtufrvg"], 3, N=10)
