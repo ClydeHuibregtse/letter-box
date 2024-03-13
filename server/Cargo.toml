@@ -1,11 +1,21 @@
 [package]
-name = "server"
+name = "letter_boxed"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+num = "0.4.1"
+num-bigint = "0.4.4"
 poem = "2.0.1"
+rand = "0.8.5"
 serde = "1.0.197"
+serde_json = "1.0.114"
 tokio = "1.36.0"
+
+[profile.bench]
+debug = true
+
+[profile.release]
+debug = true

@@ -1,9 +1,14 @@
+
+mod solver;
+
 use poem::{
-    get, handler, listener::TcpListener, web::{Path, Query}, IntoResponse, Result, Route, Server, Response,
+    get, handler, listener::TcpListener, web::Query, IntoResponse, Result, Route, Server, Response,
     error::ParseQueryError, http::StatusCode,
 };
 use serde::Deserialize;
-
+use solver::graph::Graph;
+use solver::words::random_string;
+use solver::lexicon::{LEXICON_PATH, Lexicon};
 
 #[derive(Debug, Deserialize)]
 struct SolveParams {
@@ -25,10 +30,19 @@ fn solve(
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), std::io::Error> {
-    let app = Route::new()
-        .at("/solve", get(solve));
+
+    let s = 3;
+    // let letters = random_string(4 * s);
+    let letters = "luykrtioabnw";
+    let lexicon = Lexicon::new(LEXICON_PATH).unwrap();
+    let mut g = Graph::from_letters(&letters);
+    let words = g.solve(&letters, &lexicon);
+    println!("{:?}", words);
+    Ok(())
+    // let app = Route::new()
+    //     .at("/solve", get(solve));
     
-    Server::new(TcpListener::bind("0.0.0.0:3000"))
-      .run(app)
-      .await
+    // Server::new(TcpListener::bind("0.0.0.0:3000"))
+    //   .run(app)
+    //   .await
 }
