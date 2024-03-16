@@ -1,75 +1,107 @@
-// GraphNodes
+//! Graph solutions to letter boxed
+//!
+//! # Example
+//!
+//! ```
+//! // Example usage of the graph module
+//! use crate::solver::graph::{Graph, Lexicon};
+//!
+//! // Define letters for the word game
+//! let letters = "exampleletters";
+//!
+//! // Load a lexicon for validating words
+//! let lexicon = Lexicon::new("path/to/lexicon.txt").unwrap();
+//!
+//! // Create a new graph from the letters
+//! let mut graph = Graph::from_letters(&letters);
+//!
+//! // Solve the word game and get the resulting words
+//! let words = graph.solve(&letters, &lexicon).unwrap();
+//!
+//! // Output the solution
+//! println!("Solution words: {:?}", words);
+//! ```
 
-use std::{cmp::Ordering, collections::{BinaryHeap, HashMap, HashSet}};
+use super::{
+    lexicon::{Lexicon, LEXICON_PATH},
+    words::{can_make_word, WordTrajectory},
+};
 use num::{range, BigUint, FromPrimitive, One};
-use super::{lexicon::{Lexicon, LEXICON_PATH}, words::{can_make_word, WordTrajectory}};
+use std::{
+    cmp::Ordering,
+    collections::{BinaryHeap, HashMap, HashSet},
+};
 
-
+/// Represents a unique identifier for a node in the graph.
 #[derive(Debug, Hash, PartialEq, Eq, Clone)]
 pub struct NodeID(usize, BigUint);
 
-
+/// Represents a node in the graph.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Node {
-    id: NodeID
+    id: NodeID,
 }
 
+/// Represents a directed edge between nodes in the graph.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Edge <'a> {
+pub struct Edge<'a> {
     prev: NodeID,
     next: NodeID,
-    word: &'a str    
+    word: &'a str,
 }
 
-
+/// Represents a graph structure.
 #[derive(Debug, Clone)]
-pub struct Graph <'a> {
+pub struct Graph<'a> {
     nodes: Vec<Node>,
     edges: Vec<Edge<'a>>,
     node_indices: HashMap<NodeID, usize>,
 }
 
 impl Node {
-
+    /// Creates a new node with the given index and state.
     pub fn new(index: usize, state: BigUint) -> Node {
-        Node { id: NodeID(index, state)}
+        Node {
+            id: NodeID(index, state),
+        }
     }
+
+    /// Returns a reference to the state of the node.
     pub fn state(&self) -> &BigUint {
         &self.id.1
     }
-    
+
+    /// Returns the index of the node.
     pub fn index(&self) -> usize {
         self.id.0
     }
-    
+
+    /// Generates a new node by transitioning from the current node based on the given trajectory.
     pub fn transition(&self, traj: WordTrajectory) -> Node {
-        // Generate the GraphNode that appears when w is inserted into the game
         let mut new_state = self.state().clone();
         for index in traj.indices() {
             new_state |= BigUint::one() << index;
         }
-        return Node::new(*traj.indices().last().unwrap(), new_state.clone())
+        Node::new(*traj.indices().last().unwrap(), new_state.clone())
     }
 
+    /// Computes and returns the score of the node.
     pub fn score(&self) -> usize {
         self.state().count_ones() as usize
     }
-
 }
 
 impl Ord for Node {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         let s = self.score();
         let o = other.score();
-        // If we have yet to try a Node with only one letter,
-        // we should artificially move this to the surface of the priority queue
         if s == 1 {
             return Ordering::Greater;
         }
         if o == 1 {
-            return Ordering::Less; 
+            return Ordering::Less;
         }
-        return s.cmp(&o);
+        s.cmp(&o)
     }
 }
 
@@ -79,24 +111,27 @@ impl PartialOrd for Node {
     }
 }
 
-
-impl <'a> Graph <'a> {
-
+impl<'a> Graph<'a> {
+    /// Creates a new empty graph.
     pub fn new() -> Graph<'a> {
-        return Graph {
+        Graph {
             nodes: Vec::new(),
             edges: Vec::new(),
             node_indices: HashMap::new(),
         }
     }
 
+    /// Returns a reference to the nodes in the graph.
     pub fn nodes(&self) -> &Vec<Node> {
         &self.nodes
     }
+
+    /// Returns a reference to the edges in the graph.
     pub fn edges(&self) -> &Vec<Edge> {
         &self.edges
     }
 
+    /// Creates a graph from the given letters.
     pub fn from_letters(letters: &str) -> Graph<'a> {
         let mut nodes: Vec<Node> = vec![];
         let mut node_indices: HashMap<NodeID, usize> = HashMap::new();
@@ -108,31 +143,35 @@ impl <'a> Graph <'a> {
             node_indices.insert(node.id.clone(), nodes.len());
             nodes.push(node);
         }
-        return Graph {
+        Graph {
             nodes: nodes.into_iter().collect(),
             edges: Vec::new(),
-            node_indices: node_indices
+            node_indices: node_indices,
         }
     }
 
+    /// Returns a reference to the node with the given ID, if it exists.
     pub fn get_node(&self, id: &NodeID) -> Option<&Node> {
         let index = *self.node_indices.get(id)?;
-        return self.nodes.get(index);
+        self.nodes.get(index)
     }
 
+    /// Returns a reference to the edge between the nodes with the given IDs, if it exists.
     pub fn get_edge(&self, id1: &NodeID, id2: &NodeID) -> Option<&Edge> {
         for edge in self.edges() {
             if edge.prev == *id1 && edge.next == *id2 {
-                return Some(edge)
+                return Some(edge);
             }
         }
-        return None
+        None
     }
-    
+
+    /// Checks if the graph contains a node with the given ID.
     pub fn contains(&self, id: &NodeID) -> bool {
         self.get_node(&id).is_some()
     }
 
+    /// Adds a node to the graph if it doesn't already exist.
     pub fn add_node(&mut self, id: &NodeID) {
         if !self.node_indices.contains_key(id) {
             let node = Node { id: id.clone() };
@@ -141,38 +180,32 @@ impl <'a> Graph <'a> {
         }
     }
 
+    /// Adds an edge to the graph.
     fn add_edge(&mut self, prev_id: &NodeID, next_id: &NodeID, word: &'a str) {
-
-        // If nodes not found, add them
-        // add_node does nothing if one of these exists
         self.add_node(prev_id);
         self.add_node(next_id);
 
         let edge = Edge {
             prev: prev_id.clone(),
             next: next_id.clone(),
-            word: word
+            word: word,
         };
         self.edges.push(edge);
     }
 
+    /// Generates edges for the given node based on the provided letters and lexicon.
     pub fn generate_edges_for_node(
-        &mut self, id: &NodeID, letters: &str, lexicon: &'a Lexicon
-    ) -> Option<Vec<Node>>{
-
-        // Get the current letter
-        // TODO: fix this unwrap
+        &mut self,
+        id: &NodeID,
+        letters: &str,
+        lexicon: &'a Lexicon,
+    ) -> Option<Vec<Node>> {
         let node = self.get_node(&id).unwrap().clone();
         let index = node.index();
         let cur_char = letters.chars().nth(index).unwrap();
-
-        // Get reference to all possible words
-        // TODO: prune these even farther given letters that don't appear ?
         let possible_words = lexicon.words_starting_with(cur_char);
-
         let n_len = self.nodes().len();
 
-        // Iterate over words and construct edges given that word
         for word in possible_words {
             let possible_trajectories = can_make_word(word, letters);
             for trajectory in possible_trajectories {
@@ -180,52 +213,40 @@ impl <'a> Graph <'a> {
                 if new_node.score() > node.score() {
                     self.add_node(&new_node.id);
                     self.add_edge(&node.id, &new_node.id, word);
-                    break
+                    break;
                 }
             }
         }
         let new_nodes = self.nodes()[n_len..].to_vec();
-
-        return Some(new_nodes)
+        Some(new_nodes)
     }
 
+    /// Finds the path of nodes with maximum score based on the given letters and lexicon.
     fn get_node_path(&mut self, letters: &str, lexicon: &'a Lexicon) -> Option<Vec<NodeID>> {
-
         let max_score = letters.len();
-
-        // Initialize our priority queue with whatever
-        // nodes are currently in the graph
         let mut queue: BinaryHeap<Node> = BinaryHeap::new();
         let binding = self.clone();
         for node in binding.nodes() {
             queue.push(node.clone());
         }
 
-        // Initialize visited hash
         let mut visited: HashSet<NodeID> = HashSet::new();
-
-        // Initialize parent backtrace hash
         let mut parents: HashMap<NodeID, NodeID> = HashMap::new();
 
-        // Start the BFS
         while let Some(node) = queue.pop() {
-
-            // If we've visited this node, we can assume we've already found a faster path
             if visited.contains(&node.id) {
-                continue
+                continue;
             }
             visited.insert(node.id.clone());
 
-            println!("Evaluating node: {:?} with score {:?}", &node, &node.score());
-            // TODO: fix this unwrap
-            let new_nodes = self.generate_edges_for_node(&node.id, letters, lexicon).unwrap();
+            let new_nodes = self
+                .generate_edges_for_node(&node.id, letters, lexicon)
+                .unwrap();
 
-            // Insert the new nodes
             new_nodes.iter().for_each(|n| {
                 parents.insert(n.id.clone(), node.id.clone());
                 queue.push(n.clone())
             });
-            // println!("{:?}", queue);
 
             if node.score() == max_score {
                 let mut parent = &node.id;
@@ -238,9 +259,10 @@ impl <'a> Graph <'a> {
                 return Some(parents_vec);
             }
         }
-        return None;
+        None
     }
 
+    /// Solves the game based on the given letters and lexicon, returning the sequence of words.
     pub fn solve(&mut self, letters: &str, lexicon: &'a Lexicon) -> Option<Vec<&str>> {
         let node_ids = self.get_node_path(letters, lexicon)?;
         let mut words = vec![];
@@ -249,23 +271,26 @@ impl <'a> Graph <'a> {
         }
         Some(words)
     }
-
-
 }
-
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::{BinaryHeap, HashSet}, ops::Index};
+    use std::{
+        collections::{BinaryHeap, HashSet},
+        ops::Index,
+    };
 
+    use crate::solver::{
+        graph::NodeID,
+        lexicon::{Lexicon, LEXICON_PATH},
+        words::random_string,
+    };
     use num::{BigUint, FromPrimitive, One, Zero};
-    use crate::solver::{graph::NodeID, lexicon::{Lexicon, LEXICON_PATH}, words::random_string};
 
-    use super::{Graph, Node, Edge};
+    use super::{Edge, Graph, Node};
 
     #[test]
     fn graph_basics() {
-
         let zero = BigUint::new(vec![0]);
         let one = BigUint::one();
 
@@ -274,7 +299,7 @@ mod tests {
 
         // Initialize the graph
         let mut g = Graph::new();
-    
+
         // It should be empty
         assert_eq!(g.nodes.len(), 0);
 
@@ -304,20 +329,19 @@ mod tests {
     fn get_set_bit_indices(n: BigUint) -> Vec<usize> {
         let mut indices = Vec::new();
         let mut mask = BigUint::one();
-    
+
         for i in 0..32 {
             if n.clone() & mask.clone() != BigUint::zero() {
                 indices.push(i);
             }
             mask <<= 1;
         }
-    
+
         indices
     }
 
     #[test]
     fn graph_edge_creation() {
-
         /*
         Here is an example game
         --------------------------------
@@ -339,45 +363,56 @@ mod tests {
         // Insert a node starting at the first letter
         g.add_node(&n0);
 
-
         let letters = "uigaangbpiam";
         let lexicon = Lexicon::new(LEXICON_PATH).unwrap();
         g.generate_edges_for_node(&n0, letters, &lexicon);
         // Let's make sure the NodeIDs are correct
         for edge in g.edges() {
             let next_node = g.get_node(&edge.next).unwrap();
-            
+
             // The state of the new game should cover all the letters used in the word
             let indices = get_set_bit_indices(next_node.state().clone());
-            let covered_letters: HashSet<char> = indices.iter().map(|i| {letters.chars().nth(*i).unwrap()}).collect();
+            let covered_letters: HashSet<char> = indices
+                .iter()
+                .map(|i| letters.chars().nth(*i).unwrap())
+                .collect();
             let word_letters: HashSet<char> = edge.word.chars().collect();
             assert_eq!(covered_letters, word_letters);
 
             // The new index should be the last character in the word
-            assert_eq!(letters.chars().nth(next_node.index()), edge.word.chars().last())
+            assert_eq!(
+                letters.chars().nth(next_node.index()),
+                edge.word.chars().last()
+            )
         }
-
     }
 
     #[test]
     fn node_ordering() {
-
         // The ordering here should be: n0 -> n1 -> n2 -> n3
-        let n0 = Node {id: NodeID(0, BigUint::from_usize(2).unwrap())};
-        let n1 = Node {id: NodeID(0, BigUint::from_usize(4).unwrap())};
-        let n2 = Node {id: NodeID(0, BigUint::from_usize(7).unwrap())};
-        let n3 = Node {id: NodeID(0, BigUint::from_usize(3).unwrap())};
-        
+        let n0 = Node {
+            id: NodeID(0, BigUint::from_usize(2).unwrap()),
+        };
+        let n1 = Node {
+            id: NodeID(0, BigUint::from_usize(4).unwrap()),
+        };
+        let n2 = Node {
+            id: NodeID(0, BigUint::from_usize(7).unwrap()),
+        };
+        let n3 = Node {
+            id: NodeID(0, BigUint::from_usize(3).unwrap()),
+        };
+
         // Pairwise compare
         assert!(n0 > n1);
         assert!(n0 > n2);
         assert!(n0 > n3);
-        
+
         assert!(n1 > n2);
         assert!(n1 > n3);
-        
+
         assert!(n2 > n3);
-        
+
         // Can we sort?
         let mut nodes = Vec::from([n3.clone(), n1.clone(), n0.clone(), n2.clone()]);
         nodes.sort();
@@ -389,12 +424,10 @@ mod tests {
         assert_eq!(queue.pop(), Some(n2.clone()));
         assert_eq!(queue.pop(), Some(n3.clone()));
         assert_eq!(queue.pop(), None);
-
     }
 
     #[test]
     fn graph_search() {
-
         /*
         Here is an example game
         --------------------------------
@@ -410,17 +443,14 @@ mod tests {
 
         // March 10 '24
         // let letters = "ingkphsratec";
-        
+
         // March 12 '24
         // let letters = "rvheaipnwgmo";
 
-        let letters = random_string(100);
+        let letters = random_string(12);
         let lexicon = Lexicon::new(LEXICON_PATH).unwrap();
         let mut g = Graph::from_letters(&letters);
         let words = g.solve(&letters, &lexicon);
         println!("{:?}", words);
-
-
-
     }
 }

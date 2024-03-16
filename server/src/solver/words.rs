@@ -1,45 +1,91 @@
-// Games
+//! # Words
+//!
+//! Determine if a word is a valid entry in a game and how it's entered
+//!
+//! ## Word Trajectory
+//!
+//! A `WordTrajectory` represents a trajectory of indices that form
+//! a word in the game.
+//!
+//! ## Word Trajectories
+//!
+//! `WordTrajectories` is an iterator that yields possible word trajectories
+//! given a word and available letters.
+//!
+//! ## Example
+//!
+//! ```rust
+//! use word_game::{can_make_word, WordTrajectory};
+//!
+//! fn main() {
+//!     let word = "map";
+//!     let letters = "uigaangbpiam";
+//!
+//!     let trajectories = can_make_word(word, letters);
+//!     for traj in trajectories {
+//!         println!("{:?}", traj);
+//!     }
+//! }
+//! ```
+//!
 
 use std::collections::{HashMap, VecDeque};
 use::rand::Rng;
 
 
-#[derive(Debug)]
+/// Represents a trajectory of word formation.
+#[derive(Debug, Clone)]
 pub struct WordTrajectory {
-    indices: Vec<usize>
+    indices: Vec<usize>,
 }
 
 impl WordTrajectory {
-
-    pub fn new()  -> WordTrajectory {
-        return WordTrajectory {
-            indices:Vec::new()
+    /// Creates a new empty `WordTrajectory`.
+    pub fn new() -> WordTrajectory {
+        WordTrajectory {
+            indices: Vec::new(),
         }
     }
-    pub fn add_index(&self, i: usize) -> WordTrajectory{
+
+    /// Adds an index to the trajectory.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `i` - The index to be added.
+    /// 
+    /// # Returns
+    /// 
+    /// A new `WordTrajectory` with the added index.
+    pub fn add_index(&self, i: usize) -> WordTrajectory {
         let mut next_vec = self.indices.clone();
         next_vec.push(i);
-        return WordTrajectory {
-            indices: next_vec
-        }
+        WordTrajectory { indices: next_vec }
     }
+
+    /// Returns the number of indices in the trajectory.
     pub fn len(&self) -> usize {
         self.indices.len()
     }
+
+    /// Returns the last index in the trajectory, if available.
     pub fn last(&self) -> Option<usize> {
         if self.len() == 0 {
-            return None
+            return None;
         }
-        Some(*self.indices.last()?)
+        Some(*self.indices.last().unwrap())
     }
 
+    /// Returns a reference to the vector of indices in the trajectory.
     pub fn indices(&self) -> &Vec<usize> {
         &self.indices
     }
 }
+
 type LetterIndices = HashMap<char, Vec<usize>>;
 
 
+/// An iterator over possible trajectories through letters
+/// to form a given word
 #[derive(Debug)]
 pub struct WordTrajectories<'a> {
     word: &'a str,
@@ -50,6 +96,7 @@ pub struct WordTrajectories<'a> {
 
 impl<'a> WordTrajectories <'a>{
 
+    /// Create a new collection of trajectories
     pub fn new(
         word: &'a str,
         letters: &'a str
@@ -62,6 +109,7 @@ impl<'a> WordTrajectories <'a>{
         };
     }
 
+    /// BFS visit behavior 
     pub fn _visit(
         word: &str,
         letters: &LetterIndices,
@@ -109,6 +157,8 @@ impl<'a> WordTrajectories <'a>{
         return None
     }
 
+    /// Preprocess: Convert letters into a collection that maps letters
+    /// to their occurrence indices in the game board
     fn _letter_indices(
         letters: &str
     ) -> LetterIndices {
@@ -147,6 +197,15 @@ impl <'a>  Iterator for WordTrajectories <'a> {
     
 }
 
+/// Generates a random string of the specified length composed of lowercase English letters.
+///
+/// # Arguments
+///
+/// * `length` - The length of the random string to generate.
+///
+/// # Returns
+///
+/// A randomly generated string of the specified length.
 pub fn random_string(length: usize) -> String {
     const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyz";
 
@@ -161,13 +220,25 @@ pub fn random_string(length: usize) -> String {
     random_string
 }
 
+/// Determines if a word can be formed using the given letters.
+///
+/// This function returns a `WordTrajectories` iterator that yields possible trajectories
+/// for forming the word using the provided letters.
+///
+/// # Arguments
+///
+/// * `word` - The word to form trajectories for.
+/// * `letters` - The available letters to form the word.
+///
+/// # Returns
+///
+/// An iterator yielding possible trajectories for forming the word.
 pub fn can_make_word<'a>(
     word: &'a str,
     letters: &'a str,
-) ->  WordTrajectories<'a> {
-    return WordTrajectories::new(word, letters);
+) -> WordTrajectories<'a> {
+    WordTrajectories::new(word, letters)
 }
-
 
 #[cfg(test)]
 mod tests {

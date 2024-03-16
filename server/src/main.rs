@@ -1,24 +1,21 @@
-
 mod solver;
 
 use poem::{
-    get, handler, listener::TcpListener, web::Query, IntoResponse, Result, Route, Server, Response,
-    error::ParseQueryError, http::StatusCode,
+    error::ParseQueryError, get, handler, http::StatusCode, listener::TcpListener, web::Query,
+    IntoResponse, Response, Result, Route, Server,
 };
 use serde::Deserialize;
 use solver::graph::Graph;
+use solver::lexicon::{Lexicon, LEXICON_PATH};
 use solver::words::random_string;
-use solver::lexicon::{LEXICON_PATH, Lexicon};
 
 #[derive(Debug, Deserialize)]
 struct SolveParams {
-    letters: String
+    letters: String,
 }
 
 #[handler]
-fn solve(
-    res: Result<Query<SolveParams>>
-) -> Result<impl IntoResponse> {
+fn solve(res: Result<Query<SolveParams>>) -> Result<impl IntoResponse> {
     match res {
         Ok(Query(params)) => Ok(params.letters.into_response()),
         Err(err) if err.is::<ParseQueryError>() => Ok(Response::builder()
@@ -30,7 +27,6 @@ fn solve(
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), std::io::Error> {
-
     let s = 3;
     // let letters = random_string(4 * s);
     let letters = "luykrtioabnw";
@@ -41,7 +37,7 @@ async fn main() -> Result<(), std::io::Error> {
     Ok(())
     // let app = Route::new()
     //     .at("/solve", get(solve));
-    
+
     // Server::new(TcpListener::bind("0.0.0.0:3000"))
     //   .run(app)
     //   .await
