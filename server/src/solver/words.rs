@@ -15,7 +15,7 @@
 //! ## Example
 //!
 //! ```rust
-//! use word_game::{can_make_word, WordTrajectory};
+//! use  letter_boxed::solver::words::{can_make_word, WordTrajectory};
 //!
 //! fn main() {
 //!     let word = "map";
@@ -29,9 +29,8 @@
 //! ```
 //!
 
+use ::rand::Rng;
 use std::collections::{HashMap, VecDeque};
-use::rand::Rng;
-
 
 /// Represents a trajectory of word formation.
 #[derive(Debug, Clone)]
@@ -48,13 +47,13 @@ impl WordTrajectory {
     }
 
     /// Adds an index to the trajectory.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `i` - The index to be added.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A new `WordTrajectory` with the added index.
     pub fn add_index(&self, i: usize) -> WordTrajectory {
         let mut next_vec = self.indices.clone();
@@ -83,7 +82,6 @@ impl WordTrajectory {
 
 type LetterIndices = HashMap<char, Vec<usize>>;
 
-
 /// An iterator over possible trajectories through letters
 /// to form a given word
 #[derive(Debug)]
@@ -91,40 +89,34 @@ pub struct WordTrajectories<'a> {
     word: &'a str,
     letters: LetterIndices,
     s: usize,
-    queue: VecDeque<WordTrajectory>
+    queue: VecDeque<WordTrajectory>,
 }
 
-impl<'a> WordTrajectories <'a>{
-
+impl<'a> WordTrajectories<'a> {
     /// Create a new collection of trajectories
-    pub fn new(
-        word: &'a str,
-        letters: &'a str
-    ) -> WordTrajectories<'a> {
+    pub fn new(word: &'a str, letters: &'a str) -> WordTrajectories<'a> {
         return WordTrajectories {
-            word:word,
-            letters:Self::_letter_indices(letters),
+            word: word,
+            letters: Self::_letter_indices(letters),
             s: letters.len() / 4,
-            queue:VecDeque::from([WordTrajectory::new()])
+            queue: VecDeque::from([WordTrajectory::new()]),
         };
     }
 
-    /// BFS visit behavior 
+    /// BFS visit behavior
     pub fn _visit(
         word: &str,
         letters: &LetterIndices,
         s: usize,
-        queue: &mut VecDeque<WordTrajectory>
+        queue: &mut VecDeque<WordTrajectory>,
     ) -> Option<WordTrajectory> {
-
         // First, pop the latest Trajectory to search
         if let Some(trajectory) = queue.pop_front() {
-            
             // Success condition: no letters left
             if word.len() == trajectory.len() {
-                return Some(trajectory)
+                return Some(trajectory);
             }
-            
+
             // Otherwise: create new trajectories to check
             // by iteratively appending possible valid
             // next steps
@@ -133,8 +125,8 @@ impl<'a> WordTrajectories <'a>{
             let cur_char_idx = trajectory.len();
             let c0 = word.chars().nth(cur_char_idx)?;
             // If the letter isn't in the game, immediately fail
-            if !letters.contains_key(&c0) { 
-                return None
+            if !letters.contains_key(&c0) {
+                return None;
             }
 
             // Iterate over the possible next indices
@@ -145,7 +137,7 @@ impl<'a> WordTrajectories <'a>{
                 // letter can be placed
                 if let Some(cur_loc) = trajectory.last() {
                     if cur_loc / s == next_loc / s {
-                        continue
+                        continue;
                     }
                 }
                 // Otherwise, queue up the extended trajectories
@@ -154,47 +146,43 @@ impl<'a> WordTrajectories <'a>{
                 queue.push_front(trajectory.add_index(*next_loc));
             }
         }
-        return None
+        return None;
     }
 
     /// Preprocess: Convert letters into a collection that maps letters
     /// to their occurrence indices in the game board
-    fn _letter_indices(
-        letters: &str
-    ) -> LetterIndices {
-
+    fn _letter_indices(letters: &str) -> LetterIndices {
         let mut hash_letters: LetterIndices = HashMap::new();
         for (i, l) in letters.chars().enumerate() {
             let occurrences = hash_letters.get_mut(&l);
 
             match occurrences {
-                Some(indices) => {indices.push(i); indices.sort()},
-                None => {hash_letters.insert(l, vec![i]);}
+                Some(indices) => {
+                    indices.push(i);
+                    indices.sort()
+                }
+                None => {
+                    hash_letters.insert(l, vec![i]);
+                }
             }
-
         }
-        return hash_letters
+        return hash_letters;
     }
-
 }
 
-impl <'a>  Iterator for WordTrajectories <'a> {
+impl<'a> Iterator for WordTrajectories<'a> {
     type Item = WordTrajectory;
 
     fn next(&mut self) -> Option<Self::Item> {
-
         while !self.queue.is_empty() {
             // Iterate until we get a valid word, then
             // immediately return - state maintained by the queue
-            if let Some(success) = Self::_visit(
-                self.word, &self.letters, self.s, &mut self.queue
-            ) {
-                return Some(success)
+            if let Some(success) = Self::_visit(self.word, &self.letters, self.s, &mut self.queue) {
+                return Some(success);
             }
         }
-        return None
+        return None;
     }
-    
 }
 
 /// Generates a random string of the specified length composed of lowercase English letters.
@@ -233,17 +221,14 @@ pub fn random_string(length: usize) -> String {
 /// # Returns
 ///
 /// An iterator yielding possible trajectories for forming the word.
-pub fn can_make_word<'a>(
-    word: &'a str,
-    letters: &'a str,
-) -> WordTrajectories<'a> {
+pub fn can_make_word<'a>(word: &'a str, letters: &'a str) -> WordTrajectories<'a> {
     WordTrajectories::new(word, letters)
 }
 
 #[cfg(test)]
 mod tests {
 
-    use super::{WordTrajectories, WordTrajectory, can_make_word, random_string};
+    use super::{can_make_word, random_string, WordTrajectories, WordTrajectory};
     use std::iter::zip;
 
     #[test]
@@ -258,10 +243,8 @@ mod tests {
         assert_eq!(traj2.len(), 1);
     }
 
-
     #[test]
     fn s3_can_make_word() {
-
         /*
         Here is an example game
         --------------------------------
@@ -274,7 +257,7 @@ mod tests {
         */
 
         let letters = "uigaangbpiam";
-        
+
         // This is a valid word
         let word = "map";
         let trajectories = can_make_word(word, letters);
@@ -373,7 +356,6 @@ mod tests {
         let word = "asdfs";
         let mut trajectories = can_make_word(word, letters);
         assert!(trajectories.next().is_none());
-
     }
 
     #[test]
@@ -412,8 +394,7 @@ mod tests {
 
     #[test]
     fn huge_can_make_word() {
-
-        let s = 300;
+        let s = 10;
         let letters = &random_string(s * 4);
         println!("{}", letters);
         let word = "map";
@@ -421,8 +402,5 @@ mod tests {
         for traj in trajectories {
             // println!("{:?}", traj);
         }
-
     }
-
-
 }

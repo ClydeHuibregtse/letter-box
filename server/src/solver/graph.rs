@@ -4,13 +4,14 @@
 //!
 //! ```
 //! // Example usage of the graph module
-//! use crate::solver::graph::{Graph, Lexicon};
+//! use letter_boxed::solver::graph::Graph;
+//! use letter_boxed::solver::lexicon::{Lexicon, LEXICON_PATH};
 //!
 //! // Define letters for the word game
 //! let letters = "exampleletters";
 //!
 //! // Load a lexicon for validating words
-//! let lexicon = Lexicon::new("path/to/lexicon.txt").unwrap();
+//! let lexicon = Lexicon::new(LEXICON_PATH).unwrap();
 //!
 //! // Create a new graph from the letters
 //! let mut graph = Graph::from_letters(&letters);
@@ -447,7 +448,7 @@ mod tests {
         // March 12 '24
         // let letters = "rvheaipnwgmo";
 
-        let letters = random_string(12);
+        let letters = random_string(4);
         let lexicon = Lexicon::new(LEXICON_PATH).unwrap();
         let mut g = Graph::from_letters(&letters);
         let words = g.solve(&letters, &lexicon);

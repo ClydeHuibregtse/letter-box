@@ -5,7 +5,7 @@
 //! ## Usage
 //!
 //! ```rust
-//! use lexicon::{Lexicon, LEXICON_PATH};
+//! use  letter_boxed::solver::lexicon::{Lexicon, LEXICON_PATH};
 //!
 //! fn main() {
 //!     let words = Lexicon::new(LEXICON_PATH).unwrap();
@@ -17,7 +17,7 @@
 //! ## Example
 //!
 //! ```rust
-//! use lexicon::{Lexicon, LEXICON_PATH};
+//! use  letter_boxed::solver::lexicon::{Lexicon, LEXICON_PATH};
 //!
 //! fn main() {
 //!     let words = Lexicon::new(LEXICON_PATH).unwrap();
@@ -47,7 +47,7 @@
 //! ## Example
 //!
 //! ```rust
-//! use lexicon::{Lexicon, LEXICON_PATH};
+//! use letter_boxed::solver::lexicon::{Lexicon, LEXICON_PATH};
 //!
 //! #[test]
 //! fn english_words() {
