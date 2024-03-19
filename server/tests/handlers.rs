@@ -1,14 +1,25 @@
+use std::process::ExitStatus;
+
 // use poem::web::TestRequest;
-use letter_boxed::handlers::solve;
-use poem::http::{Method, StatusCode};
+use letter_boxed::handlers::handle_solve;
+use poem::{
+    http::{Method, StatusCode},
+    test::TestClient,
+};
+
 use poem::Response;
 
-// #[tokio::test]
-// async fn test_example_handler() {
-//     // let handler = ExampleHandler;
-//     // let req = TestRequest::default().method(Method::GET).to_request();
-//     // let resp: Response = handler.call(req).await.into();
-//     // assert_eq!(resp.status(), StatusCode::OK);
-
-//     // Add more assertions as needed
-// }
+#[tokio::test]
+async fn test_solve_handler() {
+    println!("KLSJDFLKJSBDFLKSJ");
+    // // Full round-trip for solving a puzzle
+    // // March 12 '24
+    let letters = "rvheaipnwgmo";
+    let resp = TestClient::new(handle_solve)
+        .get("/solve")
+        .query("letters", &letters)
+        .send()
+        .await;
+    resp.assert_status_is_ok();
+    resp.assert_text("hello").await;
+}

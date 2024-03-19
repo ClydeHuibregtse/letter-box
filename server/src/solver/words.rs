@@ -31,6 +31,8 @@
 
 use ::rand::Rng;
 use std::collections::{HashMap, VecDeque};
+use std::thread::sleep;
+use std::time::Duration;
 
 /// Represents a trajectory of word formation.
 #[derive(Debug, Clone)]

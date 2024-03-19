@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 num = "0.4.1"
-num-bigint = "0.4.4"
 rand = "0.8.5"
 serde = "1.0.197"
 serde_json = "1.0.114"
@@ -30,3 +29,10 @@ path = "src/main.rs"
 [lib]
 name = "letter_boxed"
 path = "src/lib.rs"
+
+[dev-dependencies]
+divan = "0.1.14"
+
+[[bench]]
+name = "words"
+harness = false

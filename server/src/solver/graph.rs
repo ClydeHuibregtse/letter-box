@@ -24,10 +24,10 @@
 //! ```
 
 use super::{
-    lexicon::{Lexicon, LEXICON_PATH},
+    lexicon::Lexicon,
     words::{can_make_word, WordTrajectory},
 };
-use num::{range, BigUint, FromPrimitive, One};
+use num::{range, BigUint, One, Zero};
 use std::{
     cmp::Ordering,
     collections::{BinaryHeap, HashMap, HashSet},
@@ -83,6 +83,7 @@ impl Node {
         for index in traj.indices() {
             new_state |= BigUint::one() << index;
         }
+        // TODO: double iteration over indices
         Node::new(*traj.indices().last().unwrap(), new_state.clone())
     }
 
@@ -136,11 +137,10 @@ impl<'a> Graph<'a> {
     pub fn from_letters(letters: &str) -> Graph<'a> {
         let mut nodes: Vec<Node> = vec![];
         let mut node_indices: HashMap<NodeID, usize> = HashMap::new();
-        let n = letters.len();
-        for (i, l) in letters.chars().enumerate() {
-            let mut digits = vec![0; n];
-            digits[i] = 1;
-            let node = Node::new(i, BigUint::new(digits));
+        for (i, _l) in letters.chars().enumerate() {
+            let mut state = BigUint::zero();
+            state.set_bit(i as u64, true);
+            let node = Node::new(i, state);
             node_indices.insert(node.id.clone(), nodes.len());
             nodes.push(node);
         }
@@ -264,11 +264,15 @@ impl<'a> Graph<'a> {
     }
 
     /// Solves the game based on the given letters and lexicon, returning the sequence of words.
-    pub fn solve(&mut self, letters: &str, lexicon: &'a Lexicon) -> Option<Vec<&str>> {
+    pub fn solve(&mut self, letters: &str, lexicon: &'a Lexicon) -> Option<Vec<String>> {
         let node_ids = self.get_node_path(letters, lexicon)?;
         let mut words = vec![];
         for i in range(0, node_ids.len() - 1) {
-            words.push(self.get_edge(&node_ids[i], &node_ids[i + 1])?.word);
+            words.push(
+                self.get_edge(&node_ids[i], &node_ids[i + 1])?
+                    .word
+                    .to_string(),
+            );
         }
         Some(words)
     }
@@ -276,19 +280,44 @@ impl<'a> Graph<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        collections::{BinaryHeap, HashSet},
-        ops::Index,
-    };
+    use std::collections::{BinaryHeap, HashSet};
 
     use crate::solver::{
         graph::NodeID,
         lexicon::{Lexicon, LEXICON_PATH},
-        words::random_string,
+        words::{random_string, WordTrajectory},
     };
-    use num::{BigUint, FromPrimitive, One, Zero};
+    use num::{pow::Pow, BigUint, FromPrimitive, One, Zero};
 
     use super::{Edge, Graph, Node};
+
+    #[test]
+    fn node_basics() {
+        // Test basic implementation of Nodes
+        // Construct a node
+        let node = Node::new(0, BigUint::one());
+
+        // Node setup should be okay
+        assert_eq!(*node.state(), BigUint::one());
+        assert_eq!(node.index(), 0);
+
+        // Let's try a transition
+        // (arbitrary trajectory)
+        let mut traj = WordTrajectory::new();
+        let indices = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+        indices.iter().for_each(|i| {
+            traj = traj.add_index(*i);
+        });
+        // (transition the node)
+        let new_node = node.transition(traj);
+
+        assert_eq!(new_node.index(), 11);
+        // (new state should be 2^N - 1)
+        assert_eq!(
+            *new_node.state(),
+            BigUint::from_isize(2.pow(indices.len()) as isize - 1).unwrap()
+        );
+    }
 
     #[test]
     fn graph_basics() {
@@ -337,7 +366,6 @@ mod tests {
             }
             mask <<= 1;
         }
-
         indices
     }
 
@@ -452,6 +480,26 @@ mod tests {
         let lexicon = Lexicon::new(LEXICON_PATH).unwrap();
         let mut g = Graph::from_letters(&letters);
         let words = g.solve(&letters, &lexicon);
+
         println!("{:?}", words);
+    }
+
+    #[test]
+    fn graph_search_fuzz() {
+        // Compute solutions for a myriad of random strings
+        // such that we elucidate possible edge cases
+        let n = 10;
+        let s = 5;
+        let lexicon = Lexicon::new(LEXICON_PATH).unwrap();
+        println!("{:?}", (0..n).map(|x| { x * 2 }));
+
+        let _ = (0..n).for_each(|_x| {
+            let letters = random_string(s * 4);
+            println!("{}", &letters);
+            let mut g = Graph::from_letters(&letters);
+            let words = g.solve(&letters, &lexicon);
+            println!("{:?}", words);
+            // // assert!()
+        });
     }
 }
