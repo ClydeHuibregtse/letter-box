@@ -89,6 +89,11 @@ impl Lexicon {
         let index = l as usize - 97;
         &self.data[index]
     }
+
+    /// Return a vector of all words
+    pub fn all(&self) -> Vec<String> {
+        self.data.iter().flat_map(|v| v.iter().cloned()).collect()
+    }
 }
 
 #[cfg(test)]
