@@ -30,6 +30,8 @@
 //!
 
 use ::rand::Rng;
+use rand::distributions::WeightedIndex;
+use rand::prelude::*;
 use std::collections::{HashMap, VecDeque};
 use std::thread::sleep;
 use std::time::Duration;
@@ -204,6 +206,35 @@ pub fn random_string(length: usize) -> String {
         .map(|_| {
             let index = rng.gen_range(0..CHARSET.len());
             CHARSET[index] as char
+        })
+        .collect();
+
+    random_string
+}
+
+/// Generates a random string of the specified length composed of lowercase English letters,
+/// with a distribution common to normal English words
+///
+/// # Arguments
+///
+/// * `length` - The length of the random string to generate.
+///
+/// # Returns
+///
+/// A randomly generated string of the specified length.
+pub fn random_english_string(length: usize) -> String {
+    const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyz";
+    const PROBS: [f64; 26] = [
+        0.078, 0.02, 0.04, 0.038, 0.11, 0.014, 0.03, 0.023, 0.086, 0.0021, 0.0097, 0.053, 0.027,
+        0.072, 0.061, 0.028, 0.0019, 0.073, 0.087, 0.067, 0.033, 0.01, 0.0091, 0.0027, 0.016,
+        0.0044,
+    ];
+    let dist = WeightedIndex::new(&PROBS).unwrap();
+    let mut rng = rand::thread_rng();
+    let random_string: String = (0..length)
+        .map(|_| {
+            let sampled_index = dist.sample(&mut rng);
+            CHARSET[sampled_index] as char
         })
         .collect();
 
