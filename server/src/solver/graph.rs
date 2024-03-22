@@ -28,6 +28,8 @@ use super::{
     words::{can_make_word, WordTrajectory},
 };
 use num::{range, BigUint, One, Zero};
+use serde::ser::{SerializeStruct, SerializeTupleStruct};
+use serde::{Serialize, Serializer};
 use std::{
     cmp::Ordering,
     collections::{BinaryHeap, HashMap, HashSet},
@@ -37,14 +39,27 @@ use std::{
 #[derive(Debug, Hash, PartialEq, Eq, Clone)]
 pub struct NodeID(usize, BigUint);
 
+// Implement Serialize for NodeID to handle big ints
+impl Serialize for NodeID {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_tuple_struct("NodeID", 2)?;
+        state.serialize_field(&self.0)?;
+        state.serialize_field(&format!("{:b}", &self.1))?;
+        state.end()
+    }
+}
+
 /// Represents a node in the graph.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub struct Node {
     id: NodeID,
 }
 
 /// Represents a directed edge between nodes in the graph.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub struct Edge<'a> {
     prev: NodeID,
     next: NodeID,
@@ -265,7 +280,7 @@ impl<'a> Graph<'a> {
 
     /// Solves the game based on the given letters and lexicon, returning the sequence of words.
     pub fn solve(&mut self, letters: &str, lexicon: &'a Lexicon) -> Option<Vec<String>> {
-        let node_ids = self.get_node_path(letters, lexicon)?;
+        let node_ids = self.get_node_path(letters, &lexicon)?;
         let mut words = vec![];
         for i in range(0, node_ids.len() - 1) {
             words.push(
@@ -275,6 +290,20 @@ impl<'a> Graph<'a> {
             );
         }
         Some(words)
+    }
+}
+
+// Omit node_indices from the serialization of the graph as it is
+// simply an implementation detail
+impl<'a> Serialize for Graph<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("Graph", 2)?;
+        state.serialize_field("nodes", &self.nodes)?;
+        state.serialize_field("edges", &self.edges)?;
+        state.end()
     }
 }
 
@@ -288,6 +317,7 @@ mod tests {
         words::{random_string, WordTrajectory},
     };
     use num::{pow::Pow, BigUint, FromPrimitive, One, Zero};
+    use serde_json::json;
 
     use super::{Edge, Graph, Node};
 
@@ -476,30 +506,61 @@ mod tests {
         // March 12 '24
         // let letters = "rvheaipnwgmo";
 
-        let letters = random_string(4);
+        let letters = random_string(12);
         let lexicon = Lexicon::new(LEXICON_PATH).unwrap();
         let mut g = Graph::from_letters(&letters);
-        let words = g.solve(&letters, &lexicon);
-
-        println!("{:?}", words);
+        let _ = g.solve(&letters, &lexicon);
     }
 
     #[test]
-    fn graph_search_fuzz() {
-        // Compute solutions for a myriad of random strings
-        // such that we elucidate possible edge cases
-        let n = 10;
-        let s = 5;
-        let lexicon = Lexicon::new(LEXICON_PATH).unwrap();
-        println!("{:?}", (0..n).map(|x| { x * 2 }));
+    fn test_graph_serialize() {
+        // Make simple objects and test their (potentially custom)
+        // JSON serialization
 
-        let _ = (0..n).for_each(|_x| {
-            let letters = random_string(s * 4);
-            println!("{}", &letters);
-            let mut g = Graph::from_letters(&letters);
-            let words = g.solve(&letters, &lexicon);
-            println!("{:?}", words);
-            // // assert!()
-        });
+        // A Node with a BigUint state
+        let n0 = Node {
+            id: NodeID(0, BigUint::from_usize(2).unwrap()),
+        };
+        let node_json = json!(n0);
+        assert_eq!(json!({"id":[0,"10"]}), node_json);
+
+        let n1 = Node {
+            id: NodeID(0, BigUint::from_usize(256).unwrap()),
+        };
+        let node_json = json!(n1);
+        assert_eq!(json!({"id":[0,"100000000"]}), node_json);
+
+        let n2 = Node {
+            id: NodeID(14, BigUint::from_usize(7).unwrap()),
+        };
+        let node_json = json!(n2);
+        assert_eq!(json!({"id":[14,"111"]}), node_json);
+
+        // An Edge
+        let e1 = Edge {
+            prev: n0.id.clone(),
+            next: n2.id.clone(),
+            word: "test",
+        };
+        let edge_json = json!(e1);
+        assert_eq!(
+            json!({"next":[14,"111"],"prev":[0,"10"],"word":"test"}),
+            edge_json
+        );
+
+        // A Graph
+        // Empty
+        let mut g = Graph::new();
+        assert_eq!(json!({"nodes": [], "edges": []}), json!(g));
+
+        // Add an edge/node
+        g.add_edge(&e1.prev, &e1.next, "test");
+        assert_eq!(
+            json!({
+                "nodes": [json!(n0), json!(n2)],
+                "edges": [json!(e1)]
+            }),
+            json!(g)
+        );
     }
 }

@@ -1,8 +1,8 @@
-use divan::{black_box, counter::BytesCount, AllocProfiler, Bencher};
+use divan::Bencher;
 use letter_boxed::solver::graph::Graph;
 use letter_boxed::solver::lexicon::{Lexicon, LEXICON_PATH};
 use letter_boxed::solver::words::{
-    can_make_word, random_english_string, random_string, WordTrajectories, WordTrajectory,
+    can_make_word, random_english_string, random_string, WordTrajectory,
 };
 
 fn main() {
@@ -68,6 +68,6 @@ fn bench_solve<const SIZES: usize>(bencher: Bencher) {
         })
         .bench_local_refs(|letters| {
             let mut g = Graph::from_letters(letters);
-            let words = g.solve(letters, &lexicon);
+            let _ = g.solve(letters, &lexicon);
         });
 }

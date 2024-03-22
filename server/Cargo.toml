@@ -12,23 +12,14 @@ serde = "1.0.197"
 serde_json = "1.0.114"
 tokio = "1.36.0"
 
-[profile.bench]
-debug = true
-
-[profile.release]
-debug = true
+[[bin]]
+name = "letter_boxed"
+path = "src/main.rs"
+test = false # main binary is double tested at this point
 
 [dependencies.poem]
 version = "2.0.1"
 features = ["test"]
-
-[[bin]]
-name = "letter_boxed"
-path = "src/main.rs"
-
-[lib]
-name = "letter_boxed"
-path = "src/lib.rs"
 
 [dev-dependencies]
 divan = "0.1.14"

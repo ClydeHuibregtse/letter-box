@@ -33,8 +33,6 @@ use ::rand::Rng;
 use rand::distributions::WeightedIndex;
 use rand::prelude::*;
 use std::collections::{HashMap, VecDeque};
-use std::thread::sleep;
-use std::time::Duration;
 
 /// Represents a trajectory of word formation.
 #[derive(Debug, Clone)]
@@ -261,7 +259,7 @@ pub fn can_make_word<'a>(word: &'a str, letters: &'a str) -> WordTrajectories<'a
 #[cfg(test)]
 mod tests {
 
-    use super::{can_make_word, random_string, WordTrajectories, WordTrajectory};
+    use super::{can_make_word, random_string, WordTrajectory};
     use std::iter::zip;
 
     #[test]
@@ -429,11 +427,7 @@ mod tests {
     fn huge_can_make_word() {
         let s = 10;
         let letters = &random_string(s * 4);
-        println!("{}", letters);
         let word = "map";
-        let trajectories = can_make_word(word, letters);
-        for traj in trajectories {
-            // println!("{:?}", traj);
-        }
+        let _ = can_make_word(word, letters);
     }
 }
