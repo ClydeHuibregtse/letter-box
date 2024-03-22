@@ -7,3 +7,8 @@ deps/
 *.pstats
 .DS_Store
 profiles/
+.vscode
+
+# Rust build targets
+target/
+Cargo.lock
