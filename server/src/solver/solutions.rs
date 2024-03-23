@@ -108,7 +108,7 @@ impl<'a> Solver {
 #[derive(Debug, Serialize)]
 pub enum SolutionError {
     /// General error indicating failure in solution generation.
-    General,
+    GENERAL,
 }
 
 #[derive(Debug, Serialize)]
@@ -123,7 +123,7 @@ enum SolutionStatus {
     /// Indicating a successful solution.
     SUCCESS,
     /// Indicating failure in finding a solution.
-    FAIL,
+    FAIL(SolutionError),
 }
 
 /// Result of a solution attempt.
@@ -158,7 +158,7 @@ impl<'a> SolutionResult<'a> {
             SolutionResult {
                 solution: None,
                 meta: SolutionMeta {
-                    status: SolutionStatus::FAIL,
+                    status: SolutionStatus::FAIL(SolutionError::GENERAL),
                     runtime: runtime,
                 },
             }
