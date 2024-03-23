@@ -52,16 +52,17 @@ pub struct SolveParams {
 
 impl SolveParams {
     pub fn new(letters: &str) -> Result<Self, ParamsError> {
-        // Game board (must be multiple of 4)
-        if letters.len() % 4 != 0 {
-            return Err(ParamsError::GameSize(format!(
-                "Number of letters is not a multiple of 4: {}",
-                letters.len(),
-            )));
-        }
         Ok(SolveParams {
             letters: letters.to_string(),
         })
+    }
+    pub fn validate(&self) -> Result<(), ParamsError> {
+        if self.letters.len() % 4 != 0 {
+            return Err(ParamsError::GameSize(
+                "Game size must be a multiple of 4".to_string(),
+            ));
+        }
+        Ok(())
     }
 }
 

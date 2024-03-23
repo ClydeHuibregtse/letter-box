@@ -27,6 +27,15 @@ pub fn handle_solve(res: Result<Query<SolveParams>>) -> Result<impl IntoResponse
     let lexicon = Lexicon::new(LEXICON_PATH).unwrap();
     match res {
         Ok(Query(params)) => {
+            // Validate params before sending to solver
+            match params.validate() {
+                Ok(_) => (),
+                Err(err) => {
+                    return Ok(Response::builder()
+                        .status(StatusCode::BAD_REQUEST)
+                        .body(err.to_string()));
+                }
+            }
             let soln = SolutionResult::from_params(params, &lexicon);
             return Ok(soln.into_response());
         }

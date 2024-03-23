@@ -20,11 +20,10 @@ export class Board {
 	}
 
 	/**
-     * Calculate positions for each letter on the board.
-     * @returns An array of `LetterCell` objects representing the positions and letters on the board.
-	*/
+	 * Calculate positions for each letter on the board.
+	 * @returns An array of `LetterCell` objects representing the positions and letters on the board.
+	 */
 	letterPositions(): LetterCell[] {
-
 		let numPerSide = this.letters.length / 4;
 		let cells: LetterCell[] = [];
 		let numCells = 0;
@@ -60,10 +59,10 @@ export class Board {
 	}
 
 	/**
-     * Draw the game board and return an array of letter container groups.
-     * @param two - The Two.js instance used for drawing.
-     * @returns An array of `Group` objects representing the letter container groups.
-	*/
+	 * Draw the game board and return an array of letter container groups.
+	 * @param two - The Two.js instance used for drawing.
+	 * @returns An array of `Group` objects representing the letter container groups.
+	 */
 	drawBoard(two: Two): Group[] {
 		// Draw the gameboard and return an array of letter
 		// container groups1
@@ -98,15 +97,15 @@ export class Board {
 	}
 
 	/**
-     * Draw a letter at a specified position on the board.
-     * @param two - The Two.js instance used for drawing.
-     * @param letter - The letter to be drawn.
-     * @param x - The x-coordinate of the letter's position.
-     * @param y - The y-coordinate of the letter's position.
-     * @param width - The width of the letter's bounding rectangle.
-     * @param height - The height of the letter's bounding rectangle.
-     * @returns A `Group` object representing the letter container group.
-	*/
+	 * Draw a letter at a specified position on the board.
+	 * @param two - The Two.js instance used for drawing.
+	 * @param letter - The letter to be drawn.
+	 * @param x - The x-coordinate of the letter's position.
+	 * @param y - The y-coordinate of the letter's position.
+	 * @param width - The width of the letter's bounding rectangle.
+	 * @param height - The height of the letter's bounding rectangle.
+	 * @returns A `Group` object representing the letter container group.
+	 */
 	drawLetter(two: Two, letter: string, x: number, y: number, width: number, height: number): Group {
 		let group = two.makeGroup();
 
