@@ -10,24 +10,14 @@
 //! // Define letters for the word game
 //! let letters = "exampleletters";
 //!
-//! // Load a lexicon for validating words
-//! let lexicon = Lexicon::new(LEXICON_PATH).unwrap();
-//!
 //! // Create a new graph from the letters
 //! let mut graph = Graph::from_letters(&letters);
-//!
-//! // Solve the word game and get the resulting words
-//! let words = graph.solve(&letters, &lexicon).unwrap();
-//!
-//! // Output the solution
-//! println!("Solution words: {:?}", words);
-//! ```
 
 use super::{
     lexicon::Lexicon,
     words::{can_make_word, WordTrajectory},
 };
-use num::{range, BigUint, One, Zero};
+use num::{BigUint, One, Zero};
 use serde::ser::{SerializeStruct, SerializeTupleStruct};
 use serde::{Serialize, Serializer};
 use std::{
@@ -63,7 +53,7 @@ pub struct Node {
 pub struct Edge<'a> {
     prev: NodeID,
     next: NodeID,
-    word: &'a str,
+    pub word: &'a str,
 }
 
 /// Represents a graph structure.
@@ -82,6 +72,9 @@ impl Node {
         }
     }
 
+    pub fn from_id(node_id: NodeID) -> Node {
+        Node { id: node_id }
+    }
     /// Returns a reference to the state of the node.
     pub fn state(&self) -> &BigUint {
         &self.id.1
@@ -238,7 +231,7 @@ impl<'a> Graph<'a> {
     }
 
     /// Finds the path of nodes with maximum score based on the given letters and lexicon.
-    fn get_node_path(&mut self, letters: &str, lexicon: &'a Lexicon) -> Option<Vec<NodeID>> {
+    pub fn get_node_path(&mut self, letters: &str, lexicon: &'a Lexicon) -> Option<Vec<NodeID>> {
         let max_score = letters.len();
         let mut queue: BinaryHeap<Node> = BinaryHeap::new();
         let binding = self.clone();
@@ -277,20 +270,6 @@ impl<'a> Graph<'a> {
         }
         None
     }
-
-    /// Solves the game based on the given letters and lexicon, returning the sequence of words.
-    pub fn solve(&mut self, letters: &str, lexicon: &'a Lexicon) -> Option<Vec<String>> {
-        let node_ids = self.get_node_path(letters, &lexicon)?;
-        let mut words = vec![];
-        for i in range(0, node_ids.len() - 1) {
-            words.push(
-                self.get_edge(&node_ids[i], &node_ids[i + 1])?
-                    .word
-                    .to_string(),
-            );
-        }
-        Some(words)
-    }
 }
 
 // Omit node_indices from the serialization of the graph as it is
@@ -314,7 +293,7 @@ mod tests {
     use crate::solver::{
         graph::NodeID,
         lexicon::{Lexicon, LEXICON_PATH},
-        words::{random_string, WordTrajectory},
+        words::WordTrajectory,
     };
     use num::{pow::Pow, BigUint, FromPrimitive, One, Zero};
     use serde_json::json;
@@ -483,33 +462,6 @@ mod tests {
         assert_eq!(queue.pop(), Some(n2.clone()));
         assert_eq!(queue.pop(), Some(n3.clone()));
         assert_eq!(queue.pop(), None);
-    }
-
-    #[test]
-    fn graph_search() {
-        /*
-        Here is an example game
-        --------------------------------
-          U I G
-        M       A
-        A       A
-        I       N
-          P B G
-        --------------------------------
-        */
-        // let letters = "uigaangbpiam";
-        // let letters = "asoignfhjudlrueusidorptoeuricsbndfhwquitehds";
-
-        // March 10 '24
-        // let letters = "ingkphsratec";
-
-        // March 12 '24
-        // let letters = "rvheaipnwgmo";
-
-        let letters = random_string(12);
-        let lexicon = Lexicon::new(LEXICON_PATH).unwrap();
-        let mut g = Graph::from_letters(&letters);
-        let _ = g.solve(&letters, &lexicon);
     }
 
     #[test]
