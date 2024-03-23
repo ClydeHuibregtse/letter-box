@@ -1,6 +1,6 @@
 use divan::Bencher;
-use letter_boxed::solver::graph::Graph;
 use letter_boxed::solver::lexicon::{Lexicon, LEXICON_PATH};
+use letter_boxed::solver::solutions::{SolveParams, Solver};
 use letter_boxed::solver::words::{
     can_make_word, random_english_string, random_string, WordTrajectory,
 };
@@ -64,10 +64,9 @@ fn bench_solve<const SIZES: usize>(bencher: Bencher) {
     bencher
         .with_inputs(|| {
             // Generate a random game board
-            random_english_string(SIZES)
+            SolveParams::new(random_english_string(SIZES).as_str()).unwrap()
         })
-        .bench_local_refs(|letters| {
-            let mut g = Graph::from_letters(letters);
-            let _ = g.solve(letters, &lexicon);
+        .bench_local_values(|params| {
+            let _ = Solver::solve(params, &lexicon);
         });
 }
