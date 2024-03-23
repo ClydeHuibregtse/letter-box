@@ -233,6 +233,7 @@ impl<'a> Graph<'a> {
     /// Finds the path of nodes with maximum score based on the given letters and lexicon.
     pub fn get_node_path(&mut self, letters: &str, lexicon: &'a Lexicon) -> Option<Vec<NodeID>> {
         let max_score = letters.len();
+        println!("{}", max_score);
         let mut queue: BinaryHeap<Node> = BinaryHeap::new();
         let binding = self.clone();
         for node in binding.nodes() {

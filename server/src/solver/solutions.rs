@@ -26,7 +26,8 @@ use super::{
     lexicon::Lexicon,
 };
 use serde::{Deserialize, Serialize};
-use std::fmt;
+use std::time::Instant;
+use std::{fmt, time::Duration};
 
 /// Possible errors with Solution parameters
 #[derive(Debug, Serialize)]
@@ -88,8 +89,10 @@ impl<'a> Solver {
         // Collect results
         let mut words = vec![];
         let mut states = vec![];
-        for i in 0..node_ids.len() - 1 {
-            words.push(g.get_edge(&node_ids[i], &node_ids[i + 1])?.word.to_string());
+        for i in 0..node_ids.len() {
+            if i != node_ids.len() - 1 {
+                words.push(g.get_edge(&node_ids[i], &node_ids[i + 1])?.word.to_string());
+            }
             states.push(Node::from_id(node_ids[i].clone()));
         }
         // Return successful solution
@@ -108,6 +111,12 @@ pub enum SolutionError {
     General,
 }
 
+#[derive(Debug, Serialize)]
+pub struct SolutionMeta {
+    status: SolutionStatus,
+    runtime: Duration,
+}
+
 /// Status of a solution.
 #[derive(Debug, Serialize)]
 enum SolutionStatus {
@@ -123,23 +132,35 @@ pub struct SolutionResult<'a> {
     /// The solution if found.
     solution: Option<Solution<'a>>,
     /// Status of the solution attempt.
-    status: SolutionStatus,
+    meta: SolutionMeta,
 }
 
 impl<'a> SolutionResult<'a> {
     /// Generates a solution result from the given parameters and lexicon.
     pub fn from_params(params: SolveParams, lexicon: &Lexicon) -> SolutionResult {
+        // Solve the puzzle and compute runtime
+        // TODO: more expressive instrumentation of solve
+        //       that returns an instance of SolutionMeta
+        let now = Instant::now();
         let solver = Solver::solve(params, lexicon);
+        let runtime = Instant::now() - now;
+
         if let Some(solution) = solver {
             SolutionResult {
                 solution: Some(solution),
-                status: SolutionStatus::SUCCESS,
+                meta: SolutionMeta {
+                    status: SolutionStatus::SUCCESS,
+                    runtime: runtime,
+                },
             }
         } else {
             // Failed solve
             SolutionResult {
                 solution: None,
-                status: SolutionStatus::FAIL,
+                meta: SolutionMeta {
+                    status: SolutionStatus::FAIL,
+                    runtime: runtime,
+                },
             }
         }
     }
