@@ -28,6 +28,7 @@ pub fn handle_solve(res: Result<Query<SolveParams>>) -> Result<impl IntoResponse
     match res {
         Ok(Query(params)) => {
             // Validate params before sending to solver
+            println!("Params: {:?}", params);
             match params.validate() {
                 Ok(_) => (),
                 Err(err) => {
@@ -37,6 +38,8 @@ pub fn handle_solve(res: Result<Query<SolveParams>>) -> Result<impl IntoResponse
                 }
             }
             let soln = SolutionResult::from_params(params, &lexicon);
+            println!("Solution {:?}", soln);
+
             return Ok(soln.into_response());
         }
         Err(err) if err.is::<ParseQueryError>() => Ok(Response::builder()
