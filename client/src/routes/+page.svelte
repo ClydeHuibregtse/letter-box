@@ -1,106 +1,83 @@
 <script lang="ts">
-	import { Board } from '$lib/gameboard.ts';
-	import { onMount } from 'svelte';
-	import Two from 'two.js';
+	import BitBurndown from '../components/burndown.svelte';
+	import { SolverClient } from '$lib/solutions';
+	import Solution from '../components/solutions.svelte';
+	import Input from '../components/input.svelte';
+    import styles, { NORMALTEXT } from '../styles/constants.ts';
+	
+    let solverClient = new SolverClient();
+    let inputLetters = '';
 
-	let letters: string = '01234567890123456789';
-	let two: Two;
-	let twoContainer: HTMLElement;
+    let solnRes: any;
+    let solnLetters: string;
+    let binaryNumbers: string[];
+    let isSolving = false;
+    let errorMsg: string | null = null;
 
-	function drawScene(two: Two, letters: string) {
-		let board = new Board(letters);
-		let letterGroups = board.drawBoard(two);
-	}
-	function setup(letters: string) {
-		// Create a new instance of Two.js and attach it to the container
-		if (twoContainer == undefined) {
-			return;
-		}
-		two = new Two({
-			width: twoContainer.offsetWidth,
-			height: twoContainer.offsetHeight
-		}).appendTo(twoContainer);
+    function solnResToStates(solnRes: any) {
+        return solnRes.solution.states.map((v: any) => v.id[1]);
+    }
 
-		// Draw your shapes here
-		drawScene(two, letters);
+    async function getSolution(letters: string): Promise<any>{
+        return await solverClient.solve(letters)
+    }
 
-		// Update the rendering
-		two.update();
+    function handleClick() {
+        isSolving = true;
+        getSolution(inputLetters).then((res) => {
+            solnRes = res;
+            solnLetters = inputLetters;
+            binaryNumbers = solnResToStates(solnRes);
+            isSolving = false;
+            errorMsg = null;
+        }).catch((error) => {
+            errorMsg = error;
+            isSolving = false;
+        });
+    }
 
-		// Cleanup on component unmount
-		return () => {
-			two.clear(); // Clear the canvas
-			two.unbind('resize'); // Unbind any resize event listeners
-		};
-	}
-
-	function refresh(letters: string) {
-		if (two == null) {
-			return;
-		}
-		two.clear();
-		try {
-			drawScene(two, letters);
-		} catch {
-			return;
-		}
-		two.update();
-	}
-
-	$: {
-		refresh(letters);
-	}
-
-	onMount(() => {
-		setup(letters);
-	});
 </script>
 
-<svelte:window
-	on:resize={(event) => {
-		refresh(letters);
-	}}
-/>
+<div >
 
-<div class="grid-container">
-	<div class="grid-item"></div>
-	<div class="grid-item"></div>
-	<div class="grid-item"></div>
+    <div class="{styles.TITLETEXT}">Letter Boxed Solver</div>
 
-	<div class="grid-item"></div>
-	<div class="grid-item">
-		<div bind:this={twoContainer} id="two-container"></div>
-	</div>
+    <div class="centered w-full flex justify-center p-2">
+        <Input bind:inputValue={inputLetters} handleSubmit={handleClick}/>
+    </div>
+    <div class="w-full h-full justify-center text-center">
 
-	<div class="grid-item">
-		<input type="text" id="letters" bind:value={letters} placeholder="Enter some letters" />
-	</div>
-
-	<div class="grid-item"></div>
-	<div class="grid-item"></div>
-	<div class="grid-item"></div>
+        {#if isSolving}
+            <div class="{styles.NORMALTEXT}">Solving...</div>
+        {:else if errorMsg}
+            <div class="text-3xl font-bold centered">
+                <p>Error: {errorMsg}</p>
+            </div>
+        {:else if solnRes}
+            <div class="grid grid-cols-2 gap-4">
+                <div class="{styles.PANEL}">   
+                    <div>
+                        <p class="text-3xl font-bold underline centered">Bit Burndown Chart</p>
+                        <BitBurndown binaryNumbers={binaryNumbers} letters={solnLetters} width={1000} height={1000}/>
+                    </div>
+                </div>
+                <div class="border border-sky-500">
+                    <Solution solution={solnRes}/>
+                </div>
+            </div>
+        {:else}
+            <div class="{styles.NORMALTEXT}">Enter some letters and click submit</div>
+        {/if}
+    </div>
+    
 </div>
 
-<style>
-	#two-container {
-		background-color: antiquewhite;
-		width: 100%;
-		height: 100%;
-	}
 
-	.grid-container {
-		height: 100vh;
-		display: grid;
-		grid-template-columns: 1fr 3fr 3fr; /* Three columns of equal width */
-		grid-template-rows: 1fr 3fr 1fr; /* Three columns of equal width */
-		grid-gap: 10px; /* Gap between grid items */
-		background-color: antiquewhite;
-	}
-
-	.grid-item {
-		background-color: antiquewhite;
-		padding: 20px;
-		text-align: center;
-		/* background-color: black; */
-	}
+<style lang="postcss">
+    .grid-item {
+        overflow: scroll;
+        border: 1px solid black;
+        padding: 10px;
+    }
 </style>
+	
