@@ -64,8 +64,7 @@ use std::fs::File;
 use std::io::Read;
 
 /// Path to the lexicon JSON file.
-pub const LEXICON_PATH: &str =
-    "/Users/clyde/Documents/letter_box_project/letter-box/server/src/solver/lexicon.json";
+pub const LEXICON_PATH: &str = "./lexicon.json";
 
 /// Represents a lexicon of words.
 #[derive(Debug, Deserialize)]
@@ -76,7 +75,9 @@ pub struct Lexicon {
 impl Lexicon {
     /// Constructs a new `Lexicon` instance by reading data from a JSON file specified by `file_path`.
     pub fn new(file_path: &str) -> Result<Lexicon, Box<dyn Error>> {
-        let mut file = File::open(file_path)?;
+        let full_path = format!("{}/{}", std::env::var("DATA_DIR").unwrap(), file_path);
+        println!("{}", full_path);
+        let mut file = File::open(full_path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let my_data: Lexicon = from_str(&contents)?;

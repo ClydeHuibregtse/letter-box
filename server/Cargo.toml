@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 num = "0.4.1"
 rand = "0.8.5"
+rust-embed = "8.3.0"
 serde = "1.0.197"
 serde_json = "1.0.114"
 tokio = "1.36.0"
@@ -19,7 +20,7 @@ test = false # main binary is double tested at this point
 
 [dependencies.poem]
 version = "2.0.1"
-features = ["test"]
+features = ["test", "embed"]
 
 [dev-dependencies]
 divan = "0.1.14"
